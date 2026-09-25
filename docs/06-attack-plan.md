@@ -24,8 +24,10 @@ Why it is favourable here:
    steps by elapsed time (`03-executables.md`). On a PC the second term is
    near zero, so the cap holds all the time, and the cap itself can be
    lowered.
-5. **Music on CD audio** (mostly, to be confirmed): the SCSP matters for
-   effects first.
+5. ~~**Music on CD audio**~~: not in the title and the first field
+   (session 4): there the music is sequences for the sound driver, so the
+   SCSP and its 68000 matter for music too, not only effects. Where the
+   27 CD-DA tracks play is still to find.
 
 What makes it harder than a Wii port:
 
@@ -50,7 +52,7 @@ BIOS, whose services are plain function pointers and small.
 | Subsystem | Cut | Notes |
 |---|---|---|
 | Master SH-2 | recompiled | per program; delay slots, T bit, MAC with the S bit, the `div0/div1` step, `tas.b`, `sleep` |
-| Slave SH-2 | recompiled, run at SINIT | a second context; a SINIT write runs the slave until it waits on its FRT flag again. Deterministic first; a host thread later if it pays |
+| Slave SH-2 | recompiled, a coroutine | a second context on a host thread that runs only when the master hands it the CPU: at SSHON, at a SINIT write, and at the master's polls while it has work; it gives the CPU back when it waits on its FRT flag again. Deterministic (session 4) |
 | BIOS | HLE of the service pointers | ~15 services: interrupt vectors, SCU mask, semaphores, clock, and BUP (backup RAM as a host file). The boot is HLE too: IP.BIN checked, the 1st read file loaded at its address, state as the BIOS leaves it |
 | SCU | registers | interrupt controller, the three DMA levels (direct and indirect), timers 0 and 1 (timer 0 is a line compare: needs a raster clock) |
 | SMPC | registers | INTBACK (pads from SDL3), SSHON/SSHOFF, SNDON/SNDOFF, CD on/off, clock change, RTC |
@@ -111,7 +113,7 @@ language for deeper reading.
 | 1 ✓ | feasibility, disc, code survey, plan | `disc`, `sh2`, `hw` |
 | 2 | **code map**: function discovery on stripped SHC code, switch tables; the frame loop, its cap and how the logic steps (done); HYDSYS's services and the program swap (done); the slave job, the VDP1 command builder | `recomp.discover` (done), `exe`, a Python SH-2 interpreter as oracle, `fingerprint` (SBL by signature) |
 | 3 ✓ | **recompiler**: all 15 programs to C++, compiling and linking; self-test of isolated functions (division helper, fixed-point math, sort) against the interpreter (`09-recompiler.md`) | `recomp` (layer 4), the runtime's `core`, `stub`, `selftest` |
-| 4 | **runtime core**: memory map, BIOS HLE boot, SCU interrupts and DMA, SMPC, slave at SINIT, CD block HLE; `A.BIN` runs to its first frame, HYDSYS loads, programs swap | runtime: `core`, `bios`, `scu`, `smpc`, `cdblock`, `boot` |
+| 4 ✓ | **runtime core**: memory map, BIOS HLE boot, SCU interrupts and DMA, SMPC, the slave, CD block at its registers, the sound driver's handshake; from the boot through OPEN, HYDSYS and STARTUP to M_CHI's frame loop at 12 fps (`11-runtime.md`) | runtime: `machine`, `bios`, `mmio`, `scu`, `smpc`, `cdrom`, `cdblock`, `onchip`, `video` |
 | 5 | **VDP2 + VDP1 on screen**: the SEGA logo, the opening movie (Cinepak through the emulated CD), the title and the menus | `vdp2`, `vdp1` (GPU), `video` |
 | 6 | **in the field**: distorted sprites, Gouraud, half-transparency, mesh, the digitised sprites; the framebuffer's CPU view; play with the pad | `vdp1` complete, `pad` |
 | 7 | **sound**: CD-DA through the SCSP mixer, the 68000 and the SCSP for effects | `m68k`, `scsp`, `audio` |

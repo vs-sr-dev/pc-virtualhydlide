@@ -78,25 +78,28 @@ target was found:
 
 | Program | Functions | Instructions | switch | literal | constant | pointer | unresolved calls | unresolved jumps |
 |---|---|---|---|---|---|---|---|---|
-| HYDSYS | 421 | 24 824 | 7 | 588 | 51 | 30 | 13 | 7 |
-| LOADER | 336 | 16 184 | 1 | 409 | 28 | 28 | 13 | 7 |
-| OPEN | 1 253 | 141 845 | 14 | 5 001 | 1 277 | 94 | 184 | 11 |
-| STARTUP | 663 | 129 429 | 11 | 5 321 | 1 189 | 204 | 698 | 0 |
-| MENU | 233 | 26 040 | 5 | 547 | 90 | 45 | 114 | 0 |
+| HYDSYS | 419 | 24 473 | 6 | 577 | 47 | 30 | 13 | 7 |
+| LOADER | 335 | 16 131 | 1 | 407 | 28 | 28 | 13 | 7 |
+| OPEN | 1 254 | 140 389 | 14 | 4 987 | 1 275 | 94 | 144 | 11 |
+| STARTUP | 664 | 127 927 | 11 | 5 315 | 1 170 | 204 | 665 | 0 |
+| MENU | 235 | 23 405 | 5 | 528 | 90 | 45 | 47 | 0 |
 | M_CHI | 695 | 116 438 | 13 | 4 181 | 1 054 | 189 | 243 | 0 |
 | M_DRA | 663 | 110 787 | 12 | 3 923 | 973 | 185 | 236 | 0 |
-| M_SYA | 654 | 112 766 | 12 | 3 928 | 968 | 183 | 237 | 0 |
+| M_SYA | 655 | 112 794 | 12 | 3 931 | 968 | 183 | 237 | 0 |
 | M_KYU | 691 | 116 719 | 12 | 4 142 | 998 | 200 | 231 | 0 |
-| M_FIN | 674 | 116 539 | 13 | 4 150 | 989 | 187 | 255 | 0 |
-| M_BURIAL | 664 | 109 162 | 12 | 3 823 | 996 | 184 | 231 | 0 |
+| M_FIN | 675 | 116 567 | 13 | 4 153 | 989 | 187 | 255 | 0 |
+| M_BURIAL | 663 | 109 014 | 12 | 3 816 | 974 | 184 | 231 | 0 |
 | M_ORDEAL | 663 | 113 811 | 11 | 3 890 | 969 | 186 | 232 | 0 |
 | M_RUINS | 678 | 114 609 | 12 | 3 913 | 978 | 183 | 230 | 0 |
 | M_SEAL | 714 | 124 444 | 12 | 4 210 | 1 050 | 203 | 239 | 0 |
-| ENDING | 1 254 | 141 454 | 14 | 4 970 | 1 240 | 94 | 186 | 11 |
-| **Total** | **10 256** | **1 515 051** | | | | | **3 342** | **36** |
+| ENDING | 1 255 | 139 998 | 14 | 4 956 | 1 238 | 94 | 146 | 11 |
+| **Total** | **10 259** | **1 507 506** | | | | | **3 162** | **36** |
 
 (Instructions count code shared between functions once per function.
-Sites are counted the same way.)
+Sites are counted the same way. These are the counts after session 4's
+change to discovery, below: a new entry in the middle of code that
+another function used to run through turns that stretch into a tail call,
+so both the instructions and the call sites counted twice go down.)
 
 * **Unresolved jumps: 36**, none in the ten area programs. All are tail
   calls through tables of function pointers indexed at run time
@@ -105,7 +108,7 @@ Sites are counted the same way.)
   OPEN (0x06059E70, 0x06059EA0) and ENDING (0x06059878, 0x060598A8), and
   in OPEN and ENDING four more through an object's own table (offsets
   0x164–0x170 from the pointer in r14). `sh2_call` dispatches them.
-* **Unresolved calls: 3 342**: `jsr` through a register loaded from a
+* **Unresolved calls: 3 162**: `jsr` through a register loaded from a
   structure (callbacks, per-object handlers). They are dispatched at run
   time; STARTUP has the most.
 * **Calls through pointers** (the "pointer" column): the BIOS service
@@ -116,7 +119,7 @@ Sites are counted the same way.)
   loaded beside it.
 * **Volatile literals: 0.** Every literal load is folded to a constant.
 
-The build: 1.5 million lines of C++ in 202 files (93 MB), compiled from
+The build: 1.5 million lines of C++ in 200 files (93 MB), compiled from
 scratch in 76–85 s on 16 threads; `librecomp.a` 58 MB.
 
 ## The self-test
@@ -129,8 +132,8 @@ function.
 | Vectors | Functions | Vectors | Failures |
 |---|---|---|---|
 | saturnkit's instruction test | 775 | 9 300 | 0 |
-| the 15 programs | 2 647 | 42 148 | 0 |
-| **Total** | **3 422** | **51 448** | **0** |
+| the 15 programs | 2 653 | 42 232 | 0 |
+| **Total** | **3 428** | **51 532** | **0** |
 
 **The instruction test** is saturnkit's own: a synthetic program with each
 of the 126 instruction forms (of the 142 the decoder knows) that do not
@@ -154,7 +157,10 @@ What it covers: every instruction form, and the game's own leaf and
 near-leaf code. The vectors run 5.7% of M_CHI's instructions (203
 functions, 68 distinct operations) and 10.6% of HYDSYS's. The rest (the
 frame loop, the renderer, anything that touches hardware) is checked when
-the game runs, in phase 4.
+the game runs, in phase 4. Session 4 ran it from the boot to the field
+(OPEN, HYDSYS, STARTUP, M_CHI, both CPUs, two minutes of game time)
+without one return that went elsewhere and without one call to an
+address that is not an entry (`11-runtime.md`).
 
 ### What it caught
 
@@ -173,15 +179,26 @@ the game runs, in phase 4.
 * **The shift ladder with an offset**, the one computed jump discovery did
   not resolve (session 2): `add #-24` on the index before the table read.
   Now a fourth switch form; every program but HYDSYS and LOADER has one.
+* **An interrupt handler with no neighbour** (session 4, when STARTUP
+  took its first VBlank): a pointer that is only passed to SYS_SETUINT,
+  to a function that follows a pool nothing reads, was not taken as an
+  entry, because the words before it were neither code nor data. A
+  pointer to a stack-frame prologue is now an entry wherever it lies.
+  Gained: STARTUP 0x0603C0BC (its VBlank-IN handler), 0x0600DD9C,
+  0x06019584, MENU 0x0600C964, 0x06010390; gone: four entries that sat
+  two bytes into a real function (HYDSYS 0x060F07AA, M_BURIAL 0x0600DE92,
+  STARTUP 0x060323F2, 0x06038D72) and one that is now a shared tail
+  (HYDSYS 0x060F8978). M_CHI is unchanged (still 571 of Ghidra's 576).
 
 ## Known limits
 
 * The semantics are the interpreter's. Where the interpreter could differ
   from the hardware (`mac.w` saturation with S set, `div1` corner cases),
   both agree and both can be wrong; the game's own run is the check.
-* The program swap: `exec` jumps to the new program through the BIOS
-  pointer at 0x0600026C and never returns. In C++ that is a call that
-  does not come back; the runtime has to unwind to its main loop (phase 4).
+* The program swap: a program is started by a call to its crt0, which
+  resets the stack and never returns. In C++ that is a call that does not
+  come back; the runtime unwinds the host stack to its own loop at every
+  call to a module's base address (session 4, `11-runtime.md`).
 * Interrupts are delivered at safe points only. Code that waits on a
   hardware flag without a back-edge in between cannot be interrupted; the
   loops in the game all have one.

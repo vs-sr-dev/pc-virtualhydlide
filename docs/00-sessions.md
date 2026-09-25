@@ -62,3 +62,32 @@
 * saturnkit: `recomp` (the emitter and its driver), `recomp.selftest`, and
   the first of the C++ runtime (`runtime/`: the SH-2 context, memory,
   dispatch over modules, the self-test harness) (`10-saturnkit.md`).
+
+## Session 4 (2026-09-26) — the runtime core
+
+* **The game runs, headless** (`11-runtime.md`): from the HLE boot of
+  `A.BIN` through OPEN (its movie, its save), HYDSYS, STARTUP (the title
+  menu, a new world) to M_CHI, the first field, whose frame loop then
+  holds its cap: 587 frames in a row, every one 5 VBlanks apart, 12 fps.
+  Deterministic, in virtual time, about 38 times faster than the game's
+  own clock; no return that went elsewhere, no call to a non-entry.
+* **The Saturn in saturnkit's runtime**: the boot and the BIOS services
+  (interrupt handlers, SCU mask, semaphores, the backup memory in a host
+  file), program starts (the host stack unwound at every call to a
+  program's crt0), SCU interrupts, timers and DMA, the SMPC with a
+  scripted pad, the slave as a coroutine woken by SINIT, the CD block at
+  its registers over the .cue/.bin, the SH-2's on-chip division unit,
+  timer and DMAC, the VDPs as memory with the raster timing, and the
+  sound driver's command handshake and PCM play position.
+* **Answers**: 0x0600026C is not a program start but, by all appearances,
+  the BIOS's exit to the system (open question 9); `exec` starts a program
+  by calling its crt0; the title's and the field's music are sequences for
+  the sound driver, not CD-DA (question 6, in part); SCU timer 1, every
+  raster line, drives OPEN's sound queue; the movie player paces itself
+  by the PCM play position; STARTUP and M_CHI set VDP2 to 256 lines, a
+  PAL-only mode.
+* **Discovery**: a pointer to a stack-frame prologue is an entry wherever
+  it lies (STARTUP's VBlank-IN handler was missing); 5 functions found,
+  5 wrong or redundant entries gone, the self-test at 51 532 of 51 532.
+* `tools/run.py`: the run to the field, its trace, the hardware log as
+  tables.

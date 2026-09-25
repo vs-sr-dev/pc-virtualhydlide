@@ -109,11 +109,21 @@ dispatcher that knows which program occupies 0x0600B000 now.
 3. loads program `index` (0–13, from the name table at 0x060FA4F0:
    MENU, M_CHI, M_DRA, M_SYA, M_KYU, M_FIN, M_BURIAL, M_ORDEAL, M_RUINS,
    M_SEAL, OPEN, STARTUP, ENDING) to 0x0600B000 through `0x060EF94C`
-   (name, address, arg, −1); an out-of-range index loads MENU;
-4. **jumps** (not calls) through the BIOS pointer at 0x0600026C. That
-   service is not identified; since it follows every load and M_CHI also
-   jumps through it, it most likely starts the program at the first-read
-   address. To confirm in the runtime.
+   (name, address, arg, −1); an out-of-range index loads MENU.
+   `0x060EF94C` loads the file and **calls** its crt0 (`jsr @r0` at
+   0x060EF972, r4 = arg, r5 = −1), which resets the stack and never
+   returns; if the load fails it calls the BIOS pointer at 0x0600026C;
+4. only if that call came back does `exec` load and call `MENU.BIN` (the
+   name at 0x060FA3C4) the same way, and if that came back too, **jump**
+   through 0x0600026C. Session 2 read this jump as
+   the program start; session 4 corrected it (`11-runtime.md`): the start
+   is the call in step 3, and 0x0600026C is, by all appearances, the
+   BIOS's exit to the system menu (it follows load errors, and M_CHI
+   calls it on A+B+C+START).
+
+OPEN starts HYDSYS the same way: its own loader (0x06025B34) loads
+`HYDLIDE/EXEC/HYDSYS.BIN` to 0x060EE000 and calls it with r4 = 11
+(STARTUP) and r5 = 10; HYDSYS's crt0 passes them to `exec`.
 
 The **system call** at 0x060EE16E is variadic, `sys(cmd, ...)`, arguments
 on the stack; it dispatches on `cmd & 0xFF00` (`0x060EF164`):
@@ -169,8 +179,9 @@ ones back.
 
 Other services used: `SYS_CHGSCUIM` (mask changes), `SYS_TASSEM` /
 `SYS_CLRSEM` (semaphores 0x00, 0x20–0x23, around VDP1 and DMA),
-`SYS_GETSYSCK`, `SYS_CHGSYSCK`, the BUP pointers, and 0x0600026C (not
-identified). About 15 services in all: a small HLE surface.
+`SYS_GETSYSCK`, `SYS_CHGSYSCK`, the BUP pointers, and 0x0600026C (the
+exit to the system, session 4). About 15 services in all: a small HLE
+surface, all of it in saturnkit's runtime now (`11-runtime.md`).
 
 ## Hardware touched
 

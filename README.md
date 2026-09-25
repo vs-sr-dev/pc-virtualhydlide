@@ -23,7 +23,7 @@ on the European release, MK-81380 (V1.000, 1995-06-30), as a Redump-style
 ## Layout
 
     docs/            disc, format and code analysis, and the plan
-    tools/           Virtual Hydlide-specific data and tools: names-m_chi.tsv, recomp.py
+    tools/           Virtual Hydlide-specific data and tools: names-m_chi.tsv, recomp.py, run.py
     saturnkit/       game-agnostic Saturn toolkit (submodule)
     iso/, build/     your disc and everything derived from it (ignored by git)
 
@@ -58,6 +58,10 @@ python -m saturnkit.sh2emu $EXE --base 0600B000 --call 060224DC --regs r1=100,r0
 
 # all 15 programs to C++, built with clang (MSYS2) and checked against the interpreter
 python tools/recomp.py --build --test
+
+# the game on saturnkit's runtime, headless: boot to the first field, then the hardware log
+python tools/run.py
+python tools/run.py --report
 ```
 
 ## Status
@@ -71,8 +75,13 @@ an interpreter.
 
 Session 3: the recompiler. All 15 programs are C++ (10 256 functions, 1.5
 million instructions) that compiles, links, and agrees with the
-interpreter on 51 448 recorded calls (`docs/09-recompiler.md`). Next: the
-runtime core, to run it up to its first frame (`docs/07-next-session.md`).
+interpreter on 51 448 recorded calls (`docs/09-recompiler.md`).
+
+Session 4: the runtime core. The recompiled game runs on saturnkit's
+Saturn, still with no screen: it boots, plays its opening movie, loads
+HYDSYS, goes through the title menu and reaches the first field, whose
+frame loop holds its cap of 12 frames a second (`docs/11-runtime.md`).
+Next: VDP1 and VDP2 on screen (`docs/07-next-session.md`).
 
 ## Documentation
 
@@ -85,6 +94,7 @@ runtime core, to run it up to its first frame (`docs/07-next-session.md`).
 * [06-attack-plan.md](docs/06-attack-plan.md) — feasibility, route, phases, the frame-rate strategy
 * [07-next-session.md](docs/07-next-session.md) — the next session's list
 * [09-recompiler.md](docs/09-recompiler.md) — the programs as C++: the generated code, the counts, the self-test
+* [11-runtime.md](docs/11-runtime.md) — the runtime core: the run to the field, how the Saturn is built, the hardware touched
 * [10-saturnkit.md](docs/10-saturnkit.md) — what this port gave saturnkit
 
 ## Licence
