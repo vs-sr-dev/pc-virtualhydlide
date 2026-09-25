@@ -8,7 +8,7 @@
 | 4 | What do the 13 CPU accesses to the VDP1 framebuffer do: clear it, draw into it (movies, fades), read it back? | read the sites (0x0601B73A, 0x0601BD46, 0x06028E76…) |
 | 5 | How HYDSYS swaps programs: **answered** (`exec` at 0x060EE08C, session 2). Still open: who loads `LOADER.BIN`, if anyone; what state survives a swap; what 0x060EE008 points to | the runtime |
 | 6 | Is the music all CD-DA? What do the per-area sound-RAM images hold besides effects? | play the game with the oracle; parse `STNHYD.MAP` and a sound bank's directory |
-| 7 | What is on track 2 (5 s)? | listen: `build/audio/track02.wav` |
+| 7 | ~~What is on track 2 (5 s)?~~ **A thank-you** (heard by the user, session 2): music with a voice saying "Thanks for playing, T&E Soft". Still open: when the game plays it (after the ending? on quitting?) | the CD-audio calls (system call group 0x03) |
 | 8 | What does the slave's job (0x0602583C) compute, and its master twin (0x060255DC)? | read them (phase 2) |
 | 9 | BIOS pointer 0x0600026C: jumped through right after a program is loaded, so probably "start the program at the 1st read address" | the runtime: what the game expects after the jump |
 | 10 | The four player sets `P0`–`P3`: four looks, four classes, or four equipment levels? | read the GOB loader; play |

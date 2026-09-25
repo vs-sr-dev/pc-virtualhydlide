@@ -47,3 +47,8 @@ Things found on the way that the port does not need.
 
 11. **The save file's name**: `TE_HYD_1DAT` follows the ranking in
     `A.BIN`, presumably the backup-memory file name.
+
+12. **Track 2 says thank you.** The first audio track, five seconds long,
+    is music with a voice saying "Thanks for playing, T&E Soft": a
+    sign-off, where many discs put a warning not to play the data track.
+    When the game plays it is not known yet.

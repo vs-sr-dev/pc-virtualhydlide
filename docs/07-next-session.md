@@ -21,4 +21,3 @@
 5. Build with CMake + Ninja + clang (MSYS2), as wiikit.
 6. Still from phase 2, when convenient: the slave job (0x0602583C) and the
    VDP1 command builder; the oracle set-up (Beetle via RetroArch).
-7. The user: listen to `build/audio/track02.wav` (open question 7).
