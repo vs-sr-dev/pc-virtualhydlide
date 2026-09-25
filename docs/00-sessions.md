@@ -38,3 +38,27 @@
   programs; the frame limiter lands where its bytes are in 11 of 11.
 * **An SH-2 interpreter** in saturnkit; with it the SHC runtime's four
   division helpers identified on 12 000 of 12 000 random operands.
+
+## Session 3 (2026-09-25) — the recompiler
+
+* **All 15 programs to C++** (`09-recompiler.md`): 10 256 functions,
+  1.5 million instructions, one module per program, compiled and linked
+  with clang in under 90 s. A program in memory is recognised by its crc32, so
+  the 13 that share 0x0600B000 each run their own code.
+* **The counts**: 36 computed jumps left unresolved, all tail calls
+  through tables of function pointers in HYDSYS, LOADER, OPEN and ENDING,
+  none in the area programs; 3 342 calls through registers, dispatched at
+  run time; no static target outside the modules.
+* **The self-test**: 51 448 vectors recorded with the interpreter, 0
+  failures: saturnkit's own test of every instruction form (alone and in
+  a delay slot) and of the control flow, and 2 647 of the game's
+  functions in all 15 programs (the division and bit-field helpers, the
+  fixed-point and table routines, the routines on vectors and structures).
+* **What it caught**: functions whose code starts below their entry began
+  at the wrong place (2% of them); discovery now follows a branch into a
+  delay slot, resolves the shift ladder with an offset (the one jump left
+  in session 2), and no longer takes a data pointer (crt0's BSS end) for a
+  function.
+* saturnkit: `recomp` (the emitter and its driver), `recomp.selftest`, and
+  the first of the C++ runtime (`runtime/`: the SH-2 context, memory,
+  dispatch over modules, the self-test harness) (`10-saturnkit.md`).

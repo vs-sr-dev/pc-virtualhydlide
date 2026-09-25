@@ -1,50 +1,49 @@
-# Next session: the recompiler (phase 3)
+# Next session: the runtime core (phase 4)
 
-Where things stand: every program is mapped (`saturnkit.recomp.discover`),
-the engine is matched across programs (`saturnkit.recomp.match`), and an
-SH-2 interpreter (`saturnkit.sh2emu`) can run isolated functions. Phase 3
-turns the discovered functions into C++ that compiles, links and computes
-what the interpreter computes.
+Where things stand: every program is C++ that computes what the SH-2
+computes (`09-recompiler.md`), with a runtime that has the work RAMs, the
+dispatch over modules and nothing else: any hardware access stops the
+self-test. Phase 4 gives that code a Saturn to run on, up to the first
+frame, without drawing anything yet.
 
 ## TODO
 
-1. **The emitter**, `saturnkit/recomp/emit.py`, one C++ function per
-   discovered entry:
-   * context: r0–r15, SR split into T/S/Q/M/IMASK, GBR, VBR, MACH/MACL, PR;
-   * delayed branches: take the target and the condition first (`bt/s`
-     reads T before the slot; `jsr @rn` reads rn before the slot), emit
-     the slot, then jump;
-   * `bsr`/`jsr` with a known target as direct C++ calls, `rts` as
-     return, a branch to another entry as a tail call; `jsr` through a
-     register as a dispatch lookup;
-   * switch tables (the three forms `discover` resolves) as C++ `switch`;
-     a computed jump left unresolved falls back to a switch over all of the
-     function's own labels;
-   * exact semantics as in `sh2emu`: `div0s/div0u/div1`, `mac.w`/`mac.l`
-     with the S bit, `addc/subc/negc/addv/subv`, `rotcl/rotcr`, `tas.b`,
-     `dmuls/dmulu`, `mul.l`, `muls/mulu.w`;
-   * interrupt safe points at loop back-edges and calls (a hook the runtime
-     fills later); `sleep` as an idle point.
-2. **Per-program modules.** The 15 programs in one binary, each in its
-   own namespace (`m_chi::f_0602A566`…); a dispatch table per program; the
-   active program chosen by what `exec` (0x060EE08C) loaded at 0x0600B000,
-   recognised by a checksum of the loaded image. HYDSYS (0x060EE000) and
-   LOADER (0x060C0000) always present.
-3. **Guest memory for the generated code**: WRAM-L (0x00200000) and WRAM-H
-   (0x06000000) as host arrays, big-endian loads and stores, the
-   cache-through mirror (0x2xxxxxxx) folded, purge writes (0x4xxxxxxx)
-   ignored, everything else routed to MMIO callbacks that phase 4 fills.
-4. **Self-test**, a small executable: the four division helpers
-   (`__divlu` 0x060224DC, `__modlu` 0x0603CAE0, `__divls` 0x0603E980,
-   `__modls` 0x0603EA34), the bit-field helper (0x0603E918) and a few
-   fixed-point routines, recompiled, against `sh2emu` on the same random
-   inputs. Done when they agree on every input.
-5. **Build**: CMake + Ninja + clang from MSYS2
-   (`PATH=/c/msys64/mingw64/bin`), C++20, as wiikit; the generated project
-   in `build/recomp`, the build in `build/recomp-build`.
-6. **Done when**: all 15 programs' functions compile and link; the
-   self-test passes; the count of unresolved jumps and unknown targets is
-   written in `docs/09-recompiler.md`.
+1. **Boot, HLE**, in saturnkit's runtime (`boot`): read IP.BIN, load the
+   1st read file (A.BIN) at 0x0600B000, leave the state as the BIOS does
+   (stack, SR, VBR, the BIOS work area), identify and activate its module,
+   call its entry.
+2. **The BIOS services** (`bios`): the pointers the game uses (0x0600026C
+   and 0x06000300–0x06000358, `saturnkit.hw.BIOS`) filled with addresses
+   the recompiled code cannot reach (the BIOS ROM),
+   which `sh2_call_unknown` maps to host functions: `SYS_SETUINT`/
+   `GETUINT`, `SETSINT`/`GETSINT`, the SCU mask (`SETSCUIM`, `CHGSCUIM`,
+   `GETSCUIM`), the semaphores (`TASSEM`, `CLRSEM`), the clock
+   (`GETSYSCK`, `CHGSYSCK`), BUP (a host file), and 0x0600026C.
+3. **The program swap**: `exec` (0x060EE08C) loads a program and jumps
+   through 0x0600026C without returning. The runtime identifies the new
+   image (`sh2_identify`), activates it, and unwinds the host stack to its
+   own loop before calling the new program's entry: the old program's C++
+   frames must not stay underneath.
+4. **Interrupts** (`scu`): the SCU's mask and status registers, VBlank-IN
+   and VBlank-OUT from the host clock at 60 Hz (TVSTAT says NTSC), timers
+   0 and 1, sprite-draw end; delivered at the safe points (`sh2_poll`):
+   SR and PC pushed on the guest stack, the handler called through the
+   table SYS_SETUINT filled, its `rte` back to the sentinel.
+5. **SMPC** (`smpc`): COMREG, SR, SF, IREG, OREG; INTBACK with a pad (no
+   input yet), SSHON/SSHOFF, SNDON/SNDOFF, CDON/CDOFF.
+6. **The slave SH-2**: a second context; a write to SINIT (0x21000000)
+   runs the job at 0x060503D4 to its end (deterministic first).
+7. **The CD block** (`cdblock`), at its registers (HIRQ, CR1–CR4, the data
+   port): the commands GFS and HYDSYS's file group use, over the extracted
+   tree. CD-DA play commands recorded, not played.
+8. **SCU DMA** (direct and indirect, levels 0–2) and, as plain memory for
+   now, VDP1 and VDP2 registers and VRAM, CRAM, the SCSP's sound RAM: what
+   is written is kept, reads return it.
+9. **Done when**: A.BIN runs through its initialisation to its frame loop
+   (VBlanks counted, VDP1 frame changes requested), HYDSYS is loaded and
+   `exec` swaps to the next program; a log of every hardware register
+   touched and every call to a non-entry (open question 15), with counts,
+   in `docs/11-runtime.md`.
 
 ## When convenient
 
@@ -58,6 +57,10 @@ what the interpreter computes.
 
 ## Useful
 
+* Regenerate, build and check everything: `python tools/recomp.py --build
+  --test` (about 2 minutes; `--no-vectors` skips the interpreter).
+* The generated code is readable: each line carries its address and
+  instruction, `build/recomp/p_<program>_NNN.cpp`.
 * Ghidra's own function list for a program, to compare with `discover`:
   `saturnkit/ghidra/ExportFuncs.java` (the recipe is in its header; JDK 21
   at `J:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot`).

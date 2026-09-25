@@ -23,14 +23,15 @@ on the European release, MK-81380 (V1.000, 1995-06-30), as a Redump-style
 ## Layout
 
     docs/            disc, format and code analysis, and the plan
-    tools/           Virtual Hydlide-specific data and tools: names-m_chi.tsv
+    tools/           Virtual Hydlide-specific data and tools: names-m_chi.tsv, recomp.py
     saturnkit/       game-agnostic Saturn toolkit (submodule)
     iso/, build/     your disc and everything derived from it (ignored by git)
 
 ## Tools
 
-The Python tools need only Python 3.8+ and no dependencies. Run from the
-repository root.
+The Python tools need only Python 3.8+ and no dependencies. Building the
+recompiled C++ needs CMake, Ninja and clang (MSYS2's mingw64, found at
+`C:\msys64\mingw64\bin`). Run from the repository root.
 
 ```sh
 CUE="iso/Virtual Hydlide (Europe).cue"
@@ -54,6 +55,9 @@ python -m saturnkit.recomp.match $EXE@0600B000 build/extract/HYDLIDE/EXEC/M_KYU.
 
 # run a guest function: the SHC unsigned division, 100 / 7
 python -m saturnkit.sh2emu $EXE --base 0600B000 --call 060224DC --regs r1=100,r0=7
+
+# all 15 programs to C++, built with clang (MSYS2) and checked against the interpreter
+python tools/recomp.py --build --test
 ```
 
 ## Status
@@ -63,7 +67,12 @@ VBlanks (12 fps, 10 on a European Saturn) and its logic runs on elapsed
 time, so the port's 60 fps is one constant (`docs/03-executables.md`,
 `docs/06-attack-plan.md`). saturnkit can now find the functions of the
 stripped programs, match the engine across all 15, and run guest code in
-an interpreter. Next: the recompiler (`docs/07-next-session.md`).
+an interpreter.
+
+Session 3: the recompiler. All 15 programs are C++ (10 256 functions, 1.5
+million instructions) that compiles, links, and agrees with the
+interpreter on 51 448 recorded calls (`docs/09-recompiler.md`). Next: the
+runtime core, to run it up to its first frame (`docs/07-next-session.md`).
 
 ## Documentation
 
@@ -75,6 +84,7 @@ an interpreter. Next: the recompiler (`docs/07-next-session.md`).
 * [05-open-questions.md](docs/05-open-questions.md) — what is not known yet
 * [06-attack-plan.md](docs/06-attack-plan.md) — feasibility, route, phases, the frame-rate strategy
 * [07-next-session.md](docs/07-next-session.md) — the next session's list
+* [09-recompiler.md](docs/09-recompiler.md) — the programs as C++: the generated code, the counts, the self-test
 * [10-saturnkit.md](docs/10-saturnkit.md) — what this port gave saturnkit
 
 ## Licence

@@ -110,7 +110,7 @@ language for deeper reading.
 |---|---|---|
 | 1 ✓ | feasibility, disc, code survey, plan | `disc`, `sh2`, `hw` |
 | 2 | **code map**: function discovery on stripped SHC code, switch tables; the frame loop, its cap and how the logic steps (done); HYDSYS's services and the program swap (done); the slave job, the VDP1 command builder | `recomp.discover` (done), `exe`, a Python SH-2 interpreter as oracle, `fingerprint` (SBL by signature) |
-| 3 | **recompiler**: all 15 programs to C++, compiling and linking; self-test of isolated functions (division helper, fixed-point math, sort) against the interpreter | `recomp` (layer 4) |
+| 3 ✓ | **recompiler**: all 15 programs to C++, compiling and linking; self-test of isolated functions (division helper, fixed-point math, sort) against the interpreter (`09-recompiler.md`) | `recomp` (layer 4), the runtime's `core`, `stub`, `selftest` |
 | 4 | **runtime core**: memory map, BIOS HLE boot, SCU interrupts and DMA, SMPC, slave at SINIT, CD block HLE; `A.BIN` runs to its first frame, HYDSYS loads, programs swap | runtime: `core`, `bios`, `scu`, `smpc`, `cdblock`, `boot` |
 | 5 | **VDP2 + VDP1 on screen**: the SEGA logo, the opening movie (Cinepak through the emulated CD), the title and the menus | `vdp2`, `vdp1` (GPU), `video` |
 | 6 | **in the field**: distorted sprites, Gouraud, half-transparency, mesh, the digitised sprites; the framebuffer's CPU view; play with the pad | `vdp1` complete, `pad` |
