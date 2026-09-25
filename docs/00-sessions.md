@@ -18,3 +18,23 @@
 * saturnkit started as its own repository, here as a submodule: `disc`,
   `sh2` (equal to capstone on every SH-2 opcode), `hw`
   (`10-saturnkit.md`).
+
+## Session 2 (2026-09-25) — the code map
+
+* **The frame loop read** (`03-executables.md`): every area program's
+  `main` loops with `limiter(&last, 5)`, a cap of one frame every 5
+  VBlanks (12 fps at 60 Hz, 10 on a European Saturn), and the logic
+  advances by elapsed VBlanks (`dt`, clamped to 25), not per frame. The
+  60 fps plan is a constant, not an interpolation (`06-attack-plan.md`).
+* **HYDSYS's interface**: `exec(index, arg)` at 0x060EE08C swaps
+  programs and writes a header at 0x060EE004 (the system call, a
+  pointer, a hook, the signature 0x12345678); the variadic system call
+  dispatches four groups (reset, files/CD, sound, CD audio?).
+* **Function discovery** for stripped SHC code in saturnkit: 15 programs,
+  no conflicts; 571 of the 576 functions Ghidra finds in the field
+  program, the other 5 shared tails.
+* **The same engine across programs**: `saturnkit.recomp.match` carries
+  names from M_CHI (`tools/names-m_chi.tsv`, 25 names) to the other
+  programs; the frame limiter lands where its bytes are in 11 of 11.
+* **An SH-2 interpreter** in saturnkit; with it the SHC runtime's four
+  division helpers identified on 12 000 of 12 000 random operands.

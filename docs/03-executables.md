@@ -91,6 +91,42 @@ The game is a set of complete programs that replace each other at
 For the recompiler this means one set of functions **per program**, and a
 dispatcher that knows which program occupies 0x0600B000 now.
 
+### HYDSYS's interface
+
+`exec(index, arg)` at **0x060EE08C** (reached through the entry at
+0x060EE000 once HYDSYS is up) is the program swap:
+
+1. masks interrupts; initialises the system on the first call;
+2. writes HYDSYS's header, which the programs read:
+
+   | Address | Value | Meaning |
+   |---|---|---|
+   | 0x060EE004 | 0x060EE16E | the system call |
+   | 0x060EE008 | 0x060F07A8 | a second pointer (a shared block?) |
+   | 0x060EE00C | 0 | a hook, called by the system call's exit path if set |
+   | 0x060EE010 | 0x12345678 | a signature: HYDSYS is present |
+
+3. loads program `index` (0–13, from the name table at 0x060FA4F0:
+   MENU, M_CHI, M_DRA, M_SYA, M_KYU, M_FIN, M_BURIAL, M_ORDEAL, M_RUINS,
+   M_SEAL, OPEN, STARTUP, ENDING) to 0x0600B000 through `0x060EF94C`
+   (name, address, arg, −1); an out-of-range index loads MENU;
+4. **jumps** (not calls) through the BIOS pointer at 0x0600026C. That
+   service is not identified; since it follows every load and M_CHI also
+   jumps through it, it most likely starts the program at the first-read
+   address. To confirm in the runtime.
+
+The **system call** at 0x060EE16E is variadic, `sys(cmd, ...)`, arguments
+on the stack; it dispatches on `cmd & 0xFF00` (`0x060EF164`):
+
+| Group | Handler | Codes used by the programs | By its code |
+|---|---|---|---|
+| 0x00 | 0x060EE1AA | — | reset / initialise |
+| 0x01 | 0x060EE1F0 | 0x0100, 0x0102, 0x0108, 0x010A, 0x010B | files and CD (GFS) |
+| 0x02 | 0x060EE7DA | 0x0200–0x0210 | sound: loads `SDDRVS.TSK`, `AREATBL`, `SNDTBL`, `STNHYD.MAP`; SCSP, SMPC |
+| 0x03 | 0x060EEF6C | 0x0300–0x0304 | 22 functions over the CD block only: CD audio? |
+
+The area programs make ~80 system calls each; MENU makes 3.
+
 ## The slave SH-2
 
 The game starts the slave the SBL way (SPR library):
@@ -154,33 +190,66 @@ differs):
 
 ## The frame and its limiter
 
-The frame is paced by two things:
+### The main loop
 
-1. **VDP1 finishes drawing.** The sprite-draw-end interrupt (0x4D) tells
-   the program the frame is drawn; the program writes FBCR and PTMR itself
-   (the exact change mode is to read at run time).
-2. **A minimum number of VBlanks.** `0x0602A566(last, n)` spins until the
-   VBlank counter at 0x06057F40 has moved `n` past `*last`, then stores
-   the counter. M_CHI calls it with `n = 2` at 0x060366AC, `n = 5` in
-   `main` (0x0600B6F8), and with `n` from a variable at 0x06036508, the
-   call that looks like the in-game loop's (to read at run time).
-   `0x0602A54E(n)` waits for `n` VBlanks.
+Every area program has the same `main` at 0x0600B068 (it is first in the
+link order), and in it the same loop, 0x0600B59A–0x0600B7B8:
 
-So a frame costs `max(n VBlanks, SH-2 work + VDP1 drawing)`. On the
-Saturn the second term wins as soon as the field fills with polygons and
-sprites, and the game slows. On the PC both the SH-2 work and the drawing
-cost next to nothing: the game should hold its cap, whatever it is, all
-the time. How the game logic advances per frame (fixed step or by elapsed
-VBlanks) decides whether that cap is the speed the designers meant: see
-`06-attack-plan.md`.
+1. read the VBlank counter (`0x0602A57C` returns 0x06057F40); `delta` =
+   now − the last frame's count (0x06050464); if `delta` < 50, advance
+   two clocks by it: a timer capped at 150 (`0x0601BBBC`) and the play
+   time in hours/minutes/seconds on a base of **60** (`0x06037E0C`);
+2. the updates (`0x0600C6C0`, `0x0602C366`, `0x0602D3FE`, `0x0602EFDC`,
+   `0x0602EDEC`, `0x06024D10`, `0x06024A18`…), the drawing, `0x06029920`;
+3. **`limiter(&last, 5)`** at 0x0600B6F8: wait until 5 VBlanks have
+   passed since the previous frame;
+4. back to 1.
 
-**The area programs never read TVSTAT's PAL bit** (their one TVSTAT read
-tests ODD). Only OPEN and ENDING test it, twice each, near the end of
-their text where the libraries sit: most likely the movie player. A PAL
-console delivers 50 VBlanks a second, so a cap of `n = 2` means 25 frames
-a second on a European Saturn and 30 on a Japanese one, and anything
-counted in VBlanks runs 5/6 as fast. The port chooses its own VBlank
-rate.
+**The game is capped at one frame every 5 VBlanks: 12 frames a second on
+a 60 Hz console, 10 on a European one.** Whenever the work and the VDP1
+drawing take longer than 5 VBlanks, it drops further.
+
+### The logic runs on elapsed time
+
+The world update (`0x0602EFDC` in M_CHI) keeps its own clock:
+`dt = now − last` (0x0605A294), **clamped to 25**, and adds `dt` to its
+timers and counters (compared against 10, 25, 150, 500, 1 000) and hands it
+to the movement routines (`0x0602BDEA`). Other subsystems (0x0603897C,
+0x060398E2, 0x06029DDA, the pad reader 0x060241B2…) read the counter the
+same way and compare elapsed VBlanks with durations. The clamp is in every
+program that has the engine (M_CHI 0x0602F076, OPEN 0x0602C50A, …).
+
+So the logic does not step once per frame: it steps by elapsed VBlanks.
+Two consequences:
+
+* **The cap is a constant.** Lowering the 5 should raise the frame rate
+  without changing the game's speed: 1 gives a frame per VBlank. Whether
+  every piece of logic keeps its precision with `dt` = 1 (integer
+  rounding in movement, animations stepped by thresholds) is to check in
+  play.
+* **Everything is timed in 60 Hz VBlanks.** The play clock divides by 60;
+  a European console delivers 50, so the whole game (timers, movement,
+  the clock) runs at 5/6 speed there. The area programs never read
+  TVSTAT's PAL bit (their one TVSTAT read tests ODD); only OPEN and ENDING
+  test it, twice each, near the end of their text where the libraries
+  sit, most likely in the movie player.
+
+### The limiter
+
+`0x0602A566(last, n)` spins until the counter at 0x06057F40 has moved `n`
+past `*last`, then stores the counter in `*last`. `0x0602A54E(n)` waits
+for `n` VBlanks. The counter is incremented by the VBlank-IN handler
+(0x0603E5AC). Calls in M_CHI:
+
+| Site | n | Where |
+|---|---|---|
+| 0x0600B594 | 0 | `main`, before the loop: starts the clock |
+| **0x0600B6F8** | **5** | `main`'s loop: the frame cap |
+| 0x06036508 | 0 (r12) | 0x06036290, a screen called from the loop (pad-driven, not the field) |
+| 0x060366AC | 2 | the same screen: 30 fps (25 on PAL) |
+
+The same four sites exist in all nine area programs, at the same
+addresses for `main` (0x0600B594, 0x0600B6F8).
 
 ### Interlace
 

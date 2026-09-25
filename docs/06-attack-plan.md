@@ -19,9 +19,11 @@ Why it is favourable here:
 3. **Few exotic features.** No SGL, no SCU DSP, no cache-as-RAM, no VDP2
    rotation plane. The slave SH-2 is used in one place, opportunistically,
    through the standard SPR handshake.
-4. **The slowdown is compute and fill-rate.** A frame costs
-   `max(n VBlanks, SH-2 work + VDP1 drawing)` (`03-executables.md`). On a
-   PC the second term is near zero, so the cap holds all the time.
+4. **The slowdown is compute and fill-rate, and the cap is a constant.**
+   A frame costs `max(5 VBlanks, SH-2 work + VDP1 drawing)`, and the logic
+   steps by elapsed time (`03-executables.md`). On a PC the second term is
+   near zero, so the cap holds all the time, and the cap itself can be
+   lowered.
 5. **Music on CD audio** (mostly, to be confirmed): the SCSP matters for
    effects first.
 
@@ -60,31 +62,31 @@ BIOS, whose services are plain function pointers and small.
 
 ## The frame rate — the heart of this port
 
-Three levels, each a separate decision:
+Session 2 read the main loop (`03-executables.md`): the game caps itself
+at **one frame every 5 VBlanks** (12 fps at 60 Hz, 10 on a European
+Saturn) and drops below that whenever the frame takes longer; and its
+logic advances by **elapsed VBlanks** (`dt`, clamped to 25), not once per
+frame. That turns the plan into three steps, each an option the player
+can choose:
 
 **Level 1 — no slowdown.** With the SH-2 code native and VDP1 drawing on
-the GPU, the frame is always ready before its minimum VBlank count: the
-game runs at its own cap all the time. This comes from the route itself;
-nothing game-specific is needed. What is left to learn is the cap: `n` in
-the in-game call to the limiter (`0x0602A566` in M_CHI), read at run time.
+the GPU, the frame is always ready before its 5 VBlanks: a steady 12 fps.
+It comes from the route itself: the original game, never below its own
+cap.
 
-**Level 2 — the speed the designers meant.** The European build does not
-look at the PAL bit, so on a PAL Saturn everything counted in VBlanks ran
-at 5/6 speed. The port runs VBlank at 60 Hz (TVSTAT reports NTSC): the
-Japanese speed with the European text. The movie player, which does read
-the PAL bit, then follows NTSC timing too.
+**Level 2 — the speed the designers meant.** Everything is timed in 60 Hz
+VBlanks (the play clock divides by 60) and the area programs ignore the
+PAL bit, so a European Saturn ran the whole game at 5/6 speed. The port
+runs VBlank at 60 Hz (TVSTAT reports NTSC): the Japanese speed with the
+European text.
 
-**Level 3 — above the cap (optional, researched once the game runs).**
-Whether 60 frames a second is reachable depends on how the logic advances:
-
-* if it steps by **elapsed VBlanks** (a delta), lowering `n` to 1 gives
-  60 fps with correct speed, for the cost of a patch;
-* if it steps **once per frame**, the logic must stay at the cap and the
-  extra frames are interpolated: either game-specific (the camera and the
-  objects' positions interpolated before T&E's projection, which we can
-  hook because we own the code) or, game-agnostic and harder, by matching
-  VDP1 commands between consecutive frames (the Z-sort reorders them, so
-  matching is heuristic).
+**Level 3 — 30 or 60 fps.** The cap is the constant 5 in `main`
+(0x0600B6F4, `mov #5,r5`, the same address in all nine area programs).
+Because the logic steps by `dt`, lowering it to 2 or 1 should give 30 or
+60 fps at the same game speed, for the cost of one patched constant in
+the port's game layer. To verify in play: movement and animation that
+round `dt` badly when it is small. If something does, it is fixed where
+it is, in recompiled code we own. No interpolation should be needed.
 
 Beyond the frame rate, the same ownership of the code allows: rendering
 at the PC's resolution (VDP1 coordinates are integers, so true sub-pixel
@@ -98,8 +100,8 @@ VDP2 backgrounds: the hardest).
 Beetle Saturn (Mednafen) through RetroArch is installed
 (`F:\RetroArch 2`, used by the SAT-LBA project): screenshots by frame
 count for comparison, the user's eyes for play. A debugger (Mednafen
-standalone, or Ghidra reading plus our own runtime's traces) is needed to
-read run-time values such as the limiter's `n`. Ghidra 12.1.2 has an SH-2
+standalone, or Ghidra reading plus our own runtime's traces) helps with
+run-time values. Ghidra 12.1.2 has an SH-2
 language for deeper reading.
 
 ## Phases
@@ -107,13 +109,13 @@ language for deeper reading.
 | Phase | Goal | saturnkit gains |
 |---|---|---|
 | 1 ✓ | feasibility, disc, code survey, plan | `disc`, `sh2`, `hw` |
-| 2 | **code map**: function discovery on stripped SHC code, switch tables, the executable map; trace the frame loop and the limiter's `n`, the slave job, the VDP1 command builder; how the logic steps | function discovery, `exe` (programs, crt0, swapping), a Python SH-2 interpreter as oracle, `fingerprint` (SBL by signature) |
+| 2 | **code map**: function discovery on stripped SHC code, switch tables; the frame loop, its cap and how the logic steps (done); HYDSYS's services and the program swap (done); the slave job, the VDP1 command builder | `recomp.discover` (done), `exe`, a Python SH-2 interpreter as oracle, `fingerprint` (SBL by signature) |
 | 3 | **recompiler**: all 15 programs to C++, compiling and linking; self-test of isolated functions (division helper, fixed-point math, sort) against the interpreter | `recomp` (layer 4) |
 | 4 | **runtime core**: memory map, BIOS HLE boot, SCU interrupts and DMA, SMPC, slave at SINIT, CD block HLE; `A.BIN` runs to its first frame, HYDSYS loads, programs swap | runtime: `core`, `bios`, `scu`, `smpc`, `cdblock`, `boot` |
 | 5 | **VDP2 + VDP1 on screen**: the SEGA logo, the opening movie (Cinepak through the emulated CD), the title and the menus | `vdp2`, `vdp1` (GPU), `video` |
 | 6 | **in the field**: distorted sprites, Gouraud, half-transparency, mesh, the digitised sprites; the framebuffer's CPU view; play with the pad | `vdp1` complete, `pad` |
 | 7 | **sound**: CD-DA through the SCSP mixer, the 68000 and the SCSP for effects | `m68k`, `scsp`, `audio` |
-| 8 | **the frame rate**: 60 Hz VBlank, the cap held, then level 3 | profiler, frame pacing |
+| 8 | **the frame rate**: 60 Hz VBlank, the cap held, then the cap lowered to 2 and 1 and the game checked at 30 and 60 fps | profiler, frame pacing |
 | 9 | **PC finish**: resolution, window/fullscreen, pad and keyboard mapping, saves to a host file, configuration; release shape | |
 
 Phases 2–4 are wide and mostly invisible; the first picture comes in

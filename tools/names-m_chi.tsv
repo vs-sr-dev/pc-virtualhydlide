@@ -1,0 +1,28 @@
+# Function names for M_CHI.BIN (loaded at 0x0600B000), found by reading the code.
+# Carried to the other programs with: python -m saturnkit.recomp.match
+# address	name	how it was established
+0600B068	main	crt0 calls it; holds the frame loop
+0602A566	frame_limiter	spins until the VBlank counter is n past *last, stores it (docs/03)
+0602A54E	wait_vblanks	waits n VBlank-counter changes
+0602A57C	get_vblank_count	returns *0x06057F40
+0603E5AC	vblank_in_handler	SYS_SETUINT(0x40, it); increments 0x06057F40, runs callbacks
+0603E602	vblank_out_handler	SYS_SETUINT(0x41, it)
+0603E688	timer0_handler	SYS_SETUINT(0x43, it)
+0603E69C	timer1_handler	SYS_SETUINT(0x44, it)
+0603E65C	sprite_end_handler	SYS_SETUINT(0x4D, it)
+06040C5A	smpc_handler	SYS_SETUINT(0x47, it)
+0602A290	install_interrupts	saves the old 0x40/0x41/0x43/0x44 handlers, installs these
+0603E6C4	slave_entry	SYS_SETSINT(0x94, it) before SSHON
+0603E714	slave_loop	polls FTCSR, calls the job at 0x060503D4
+0603E76C	slave_start	SSHOFF, SYS_SETSINT(0x94), SSHON
+0603E8D0	slave_idle	1 if the slave's job pointer is 0
+0603E8E6	slave_run	waits idle, stores the job, writes SINIT
+0601BBBC	timer_add_dt	adds dt to 0x0604BFEC, capped at 150
+06037E0C	playtime_add_dt	play clock in hours/minutes/seconds on a base of 60
+0602EFDC	world_update	dt = now - last (0x0605A294), clamped to 25; timers and movement
+06036290	screen_0x36290	a pad-driven screen called from the frame loop (not the field)
+060224DC	__divlu	r0 = r1 / r0 unsigned; interpreter: 3000 of 3000
+0603CAE0	__modlu	r0 = r1 % r0 unsigned; interpreter: 3000 of 3000
+0603E980	__divls	r0 = r1 / r0 signed, truncating; interpreter: 3000 of 3000
+0603EA34	__modls	r0 = r1 % r0 signed; interpreter: 3000 of 3000
+0603E918	bitfield_helper	width/position packed in r1 (not identified further)

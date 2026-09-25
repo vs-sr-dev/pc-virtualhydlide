@@ -23,7 +23,7 @@ on the European release, MK-81380 (V1.000, 1995-06-30), as a Redump-style
 ## Layout
 
     docs/            disc, format and code analysis, and the plan
-    tools/           Virtual Hydlide-specific tools (none yet)
+    tools/           Virtual Hydlide-specific data and tools: names-m_chi.tsv
     saturnkit/       game-agnostic Saturn toolkit (submodule)
     iso/, build/     your disc and everything derived from it (ignored by git)
 
@@ -47,14 +47,23 @@ python -m saturnkit.sh2 $EXE --find-base
 python -m saturnkit.sh2 $EXE --base 0600B000 --at 0603E714 --count 40   # the slave SH-2's loop
 python -m saturnkit.sh2 $EXE --base 0600B000 --refs 25D00000:25D00018   # VDP1 registers
 python -m saturnkit.hw 25D00002 06000310
+
+# functions and code/data; names from M_CHI carried to another program
+python -m saturnkit.recomp.discover $EXE --base 0600B000 --report
+python -m saturnkit.recomp.match $EXE@0600B000 build/extract/HYDLIDE/EXEC/M_KYU.BIN@0600B000 --names tools/names-m_chi.tsv --out build/names/M_KYU.tsv
+
+# run a guest function: the SHC unsigned division, 100 / 7
+python -m saturnkit.sh2emu $EXE --base 0600B000 --call 060224DC --regs r1=100,r0=7
 ```
 
 ## Status
 
-Session 1: feasibility, disc and code survey, the plan. The route is
-static recompilation of the SH-2 code with the Saturn's hardware replaced
-(`docs/06-attack-plan.md`). saturnkit has its layers 1–3 started: disc,
-SH-2 decoder (checked against capstone on all 65 536 words), address map.
+Session 2: the code map. The game caps itself at one frame every 5
+VBlanks (12 fps, 10 on a European Saturn) and its logic runs on elapsed
+time, so the port's 60 fps is one constant (`docs/03-executables.md`,
+`docs/06-attack-plan.md`). saturnkit can now find the functions of the
+stripped programs, match the engine across all 15, and run guest code in
+an interpreter. Next: the recompiler (`docs/07-next-session.md`).
 
 ## Documentation
 
