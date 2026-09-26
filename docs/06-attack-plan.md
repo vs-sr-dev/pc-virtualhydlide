@@ -121,8 +121,9 @@ language for deeper reading.
 | 8 | **the frame rate**: 60 Hz VBlank, the cap held, then the cap lowered to 2 and 1 and the game checked at 30 and 60 fps | profiler, frame pacing |
 | 9 | **PC finish**: resolution, window/fullscreen, pad and keyboard mapping, saves to a host file, configuration; release shape | |
 
-Phases 2–4 are wide and mostly invisible; the first picture comes in
-phase 5. The runtime parts that are not game-specific (window, audio
+Session 5 moved phase 7 (sound) before the rest of phase 6: the field
+already plays right, and silence is the most visible gap. Phases 2–4
+were wide and mostly invisible; the first picture came in phase 5. The runtime parts that are not game-specific (window, audio
 output, the profiler) can start from wiikit's, same author and licence.
 
 ## Principles kept from the Wii ports
