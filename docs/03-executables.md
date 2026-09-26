@@ -231,6 +231,8 @@ same way and compare elapsed VBlanks with durations. The clamp is in every
 program that has the engine (M_CHI 0x0602F076, OPEN 0x0602C50A, …).
 
 So the logic does not step once per frame: it steps by elapsed VBlanks.
+(*Session 6: only in part.* The clocks and timers do; the player's
+motion is stepped one script entry per frame, `14-frame-rate.md`.)
 Two consequences:
 
 * **The cap is a constant.** Lowering the 5 should raise the frame rate

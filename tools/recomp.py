@@ -35,6 +35,12 @@ RESIDENT = [("HYDSYS", 0x060EE000), ("LOADER", 0x060C0000)]
 SWAPPED = ["OPEN", "STARTUP", "MENU", "M_CHI", "M_DRA", "M_SYA", "M_KYU", "M_FIN",
            "M_BURIAL", "M_ORDEAL", "M_RUINS", "M_SEAL", "ENDING"]
 PROGRAMS = RESIDENT + [(n, 0x0600B000) for n in SWAPPED]
+# hooks (saturnkit.recomp --hook): after `mov #5,r5` at 0x0600B6F4 in the nine
+# area programs, the frame cap main's loop hands the limiter
+# (docs/03-executables.md); tools/run.py --frame-interval sets it
+AREAS = ["M_CHI", "M_DRA", "M_SYA", "M_KYU", "M_FIN", "M_BURIAL", "M_ORDEAL", "M_RUINS", "M_SEAL"]
+FRAME_CAP = 0x0600B6F4
+HOOKS = {n: [FRAME_CAP] for n in AREAS}
 # the self-test's division and bit-field helpers, by name (tools/names-m_chi.tsv)
 M_CHI_FUNCS = "060224DC,0603CAE0,0603E980,0603EA34,0603E918"
 
@@ -67,7 +73,7 @@ def main():
     a = ap.parse_args()
     from saturnkit.recomp.__main__ import generate, parse_spec
     t0 = time.time()
-    generate([parse_spec(spec(n, b)) for n, b in PROGRAMS], OUT, optest=True)
+    generate([parse_spec(spec(n, b)) for n, b in PROGRAMS], OUT, optest=True, hooks=HOOKS)
     if not a.no_vectors:
         os.makedirs(os.path.join(OUT, "selftest"), exist_ok=True)
         with concurrent.futures.ProcessPoolExecutor() as ex:

@@ -89,6 +89,10 @@ Because the logic steps by `dt`, lowering it to 2 or 1 should give 30 or
 the port's game layer. To verify in play: movement and animation that
 round `dt` badly when it is small. If something does, it is fixed where
 it is, in recompiled code we own. No interpolation should be needed.
+*Session 6: not so simple.* The cap changes (a recompiler hook), but the
+player's motion is stepped per frame, one entry of a motion script a
+frame, so at 60 fps the player walks 5 times too fast
+(`14-frame-rate.md`). Level 3 needs those steps made to follow `dt`.
 
 **Experimental, an option at most: interpolating the draw lists.** For a
 player who wants the original 12 fps logic untouched, the renderer alone

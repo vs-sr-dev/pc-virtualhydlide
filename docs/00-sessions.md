@@ -137,3 +137,11 @@
   effects.
 * CD-DA sectors become samples at the SCSP's external input; no CD-DA
   play comes up from the boot to the field, so it is not yet heard.
+* **The frame cap, level 3** (`14-frame-rate.md`): saturnkit's recompiler
+  can now hook an instruction; `tools/run.py --frame-interval 1` (or 2)
+  makes the nine area programs' cap 1 (or 2) VBlanks, and the field draws
+  60 (or 30) frames a second. But the player's walk is stepped per
+  frame, 0.5 units a frame at every interval, by a motion script read one
+  entry a frame in the world update: at 60 fps the player walks 5 times
+  too fast. Lowering the constant is not enough; the per-frame steps have
+  to follow dt.
