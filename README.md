@@ -24,14 +24,17 @@ on the European release, MK-81380 (V1.000, 1995-06-30), as a Redump-style
 
     docs/            disc, format and code analysis, and the plan
     tools/           Virtual Hydlide-specific data and tools: names-m_chi.tsv, recomp.py, run.py, oracle.py
+    tools/game/      the game layer: C++ built into the runtime, working through recompiler hooks
     saturnkit/       game-agnostic Saturn toolkit (submodule)
     iso/, build/     your disc and everything derived from it (ignored by git)
 
 ## Tools
 
 The Python tools need only Python 3.8+ and no dependencies. Building the
-recompiled C++ needs CMake, Ninja and clang (MSYS2's mingw64, found at
-`C:\msys64\mingw64\bin`). Run from the repository root.
+recompiled C++ needs CMake, Ninja, clang and SDL3 (MSYS2's mingw64, found at
+`C:\msys64\mingw64\bin`). The oracle needs RetroArch with the Beetle
+Saturn core, and ffmpeg on the PATH for its recordings. Run from the
+repository root.
 
 ```sh
 CUE="iso/Virtual Hydlide (Europe).cue"
@@ -59,24 +62,28 @@ python -m saturnkit.sh2emu $EXE --base 0600B000 --call 060224DC --regs r1=100,r0
 # all 15 programs to C++, built with clang (MSYS2) and checked against the interpreter
 python tools/recomp.py --build --test
 
-# play it: a window, the keyboard (arrows, Enter, Z X C, A S D, Q W) or a gamepad
+# play it: a window with sound, the keyboard (arrows, Enter, Z X C, A S D, Q W) or a gamepad
 python tools/run.py --play
+python tools/run.py --play --interp        # 60 pictures a second: the fields between the game's frames drawn moving
 
 # headless: boot to the first field, then the hardware log; pictures at chosen VBlanks
 python tools/run.py
 python tools/run.py --report
 python tools/run.py -- --shot 600,1300,7200
+python tools/run.py -- --wav build/run/run.wav     # the run's sound
 
 # the oracle: Beetle Saturn in RetroArch, pressed and photographed from here
 python tools/oracle.py --at 30:START,35.3:shot
+python tools/oracle.py --at 20:START --record      # and its sound, for comparison
 ```
 
 ## Status
 
 Session 2: the code map. The game caps itself at one frame every 5
-VBlanks (12 fps, 10 on a European Saturn) and its logic runs on elapsed
-time, so the port's 60 fps is one constant (`docs/03-executables.md`,
-`docs/06-attack-plan.md`). saturnkit can now find the functions of the
+VBlanks (12 fps, 10 on a European Saturn); its clocks run on elapsed
+time, which made the port's 60 fps look like one constant
+(`docs/03-executables.md`, `docs/06-attack-plan.md`; session 6 found
+otherwise). saturnkit can now find the functions of the
 stripped programs, match the engine across all 15, and run guest code in
 an interpreter.
 
@@ -92,7 +99,17 @@ frame loop holds its cap of 12 frames a second (`docs/11-runtime.md`).
 Session 5: on screen. VDP1 and VDP2 in software and a window: the
 opening movie, the title, the menus and the field are drawn and look like
 Beetle Saturn's, and the game is played with the keyboard or a gamepad
-(`docs/12-video.md`). Next: playing in the field (`docs/07-next-session.md`).
+(`docs/12-video.md`).
+
+Session 6: sound and 60 fps. The game's own sound drivers run on an
+emulated 68000 beside an emulated SCSP: music, effects and the movie's
+voice, matching Beetle Saturn's recording (`docs/13-sound.md`). The frame
+cap can be lowered, but everything that moves is stepped per frame, so
+the port keeps the game's 12 frames a second and draws the fields between
+them instead: `--interp`, one frame behind, with a game layer that tells
+the renderer which shape is which (`docs/14-frame-rate.md`). Played by
+the user, sound and all. Next: the last glitches of `--interp`, then the
+rest of the game's areas (`docs/07-next-session.md`).
 
 ## Documentation
 
@@ -107,6 +124,8 @@ Beetle Saturn's, and the game is played with the keyboard or a gamepad
 * [09-recompiler.md](docs/09-recompiler.md) — the programs as C++: the generated code, the counts, the self-test
 * [11-runtime.md](docs/11-runtime.md) — the runtime core: the run to the field, how the Saturn is built, the hardware touched
 * [12-video.md](docs/12-video.md) — VDP1 and VDP2 on screen: what each screen uses, the window, the oracle
+* [13-sound.md](docs/13-sound.md) — the 68000 and the SCSP: what is heard, against Beetle, how it is built
+* [14-frame-rate.md](docs/14-frame-rate.md) — the frame cap, what steps per frame, the fields in between
 * [10-saturnkit.md](docs/10-saturnkit.md) — what this port gave saturnkit
 
 ## Licence
