@@ -77,7 +77,8 @@ def main():
     if a.build:
         t = time.time()
         tool = lambda x: shutil.which(x, path=env["PATH"])      # CreateProcess searches the parent's PATH
-        subprocess.run([tool("cmake"), "-S", OUT, "-B", BUILD, "-G", "Ninja", "-DCMAKE_CXX_COMPILER=clang++"],
+        subprocess.run([tool("cmake"), "-S", OUT, "-B", BUILD, "-G", "Ninja", "-DCMAKE_CXX_COMPILER=clang++",
+                        "-DCMAKE_C_COMPILER=clang"],
                        env=env, check=True, stdout=subprocess.DEVNULL)
         subprocess.run([tool("ninja"), "-C", BUILD], env=env, check=True)
         print("built in %.0f s" % (time.time() - t))

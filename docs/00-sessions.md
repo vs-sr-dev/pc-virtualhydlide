@@ -120,3 +120,20 @@
   menus, a new world, then the field for over two minutes, running
   around and killing monsters. Everything looked right; the sound is
   silent (phase 7).
+
+## Session 6 (2026-09-26) — sound
+
+* **The game is heard** (`13-sound.md`): the sound drivers the programs
+  load (`SDDRVSO.TSK` in OPEN, `SDDRVS.TSK` in STARTUP and M_CHI) run on
+  an emulated 68000 (Musashi) beside an emulated SCSP (slots, envelopes,
+  LFOs, FM, timers, interrupts, DMA, the DSP), in the machine's virtual
+  time, out through an SDL3 audio stream or `--wav`. The session-4
+  handshake HLE is gone: the driver clears its own command blocks and
+  publishes the PCM play position from the SCSP's slot monitor.
+* **Against Beetle**: `tools/oracle.py --record` keeps Beetle's sound.
+  The opening movie's audio correlates at 0.99 with Beetle's at a
+  constant offset, same stereo image, 1.6 dB louder in every band; the
+  title is silent in both; the menus and the field have their music and
+  effects.
+* CD-DA sectors become samples at the SCSP's external input; no CD-DA
+  play comes up from the boot to the field, so it is not yet heard.

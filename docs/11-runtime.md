@@ -79,7 +79,8 @@ Interrupts taken by the master in the run:
 | `smpc.cpp` | Commands, INTBACK, a digital pad driven by a script |
 | `cdrom.cpp`, `cdblock.cpp` | The disc (.cue/.bin, ISO 9660) and the CD block at its registers |
 | `onchip.cpp` | The SH7604's own registers, per CPU: division unit, free-running timer, DMAC |
-| `video.cpp` | The raster timing, the video and sound chips on the bus, the sound driver's side |
+| `video.cpp` | The raster timing, the video chips on the bus |
+| `sound.cpp`, `scsp.cpp` | The 68000 and the SCSP (phase 7, `13-sound.md`; session 4 had the driver's handshake here, below) |
 | `vdp1.cpp`, `vdp2.cpp`, `host.cpp` | VDP1 drawn in software, VDP2's picture, the window and the pad (phase 5, `12-video.md`) |
 | `main.cpp` | `saturn --cue GAME.cue [--headless] [--vblanks N] [--input SCRIPT] [--shot N,...] [--trace] ...` |
 
@@ -181,9 +182,11 @@ Initialize 5, Abort File 4, Set Sector Length 4, Get TOC 4. GFS reads the
 directories itself: of the CD block's file-system commands only Abort
 File comes up.
 
-### Sound: the driver's side
+### Sound: the driver's side (sessions 4–5)
 
-The 68000 is not run. What the SH-2 waits for from it is SBL's sound
+Since session 6 the 68000 runs the driver itself and this handshake HLE
+is gone (`13-sound.md`); what follows is how the game was carried to the
+field without it. The 68000 was not run. What the SH-2 waits for from it is SBL's sound
 driver taking commands: the host writes 16-byte blocks into sound RAM at
 0x700 (the address the driver publishes at 0x404) and waits until a
 block's first byte is cleared. The runtime clears it at the next poll and
@@ -299,11 +302,8 @@ the same run (`tools/run.py --vblanks N -- --peek 25F80000:8,...`).
 
 ## Limits
 
-* **No 68000.** Sound-driver commands are taken and logged, PCM play
-  positions run from time; sequences and effects make no sound. (The
-  reads of 0x25A000A0–0xAE are the PCM task's, at 0.415 s, before the
-  driver has put its area's address at 0x404.)
-* **CD-DA** plays would be timed, not heard.
+* **Sound**: the 68000 and the SCSP since session 6; their limits are in
+  `13-sound.md`.
 * **VDP1** draws in 1 ms of game time, whatever it draws. (Session 4: it
   drew nothing and VDP2 was not composited; both are phase 5's,
   `12-video.md`.)

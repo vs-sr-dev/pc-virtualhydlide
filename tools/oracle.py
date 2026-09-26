@@ -1,7 +1,7 @@
 """Virtual Hydlide in Beetle Saturn (RetroArch), driven from here: the oracle
 for what the port shows.
 
-    python tools/oracle.py [--at SECONDS:WHAT,...] [--out DIR] [--quit SECONDS]
+    python tools/oracle.py [--at SECONDS:WHAT,...] [--out DIR] [--quit SECONDS] [--record]
 
 Boots the disc (iso/*.cue) in RetroArch's Beetle Saturn core and, at each
 time given (seconds since the launch, the emulator running at its own
@@ -19,6 +19,10 @@ nothing saved), its own core options (the user's, with no cartridge: with a
 backup-RAM cartridge in, OPEN first asks which memory to save to, and the
 port has none), the network RetroPad, and no saving of the configuration
 on exit.
+
+--record has RetroArch record the run (its FFmpeg recorder, DIR/record.mkv)
+and keeps the sound of it as DIR/record.wav (ffmpeg on the PATH): what the
+port's --wav is compared with.
 
 The times are wall-clock times, so two runs differ by a few frames.
 """
@@ -78,6 +82,7 @@ def main():
     ap.add_argument("--at", default="", help="SECONDS:WHAT,... (WHAT: shot, or buttons joined by +)")
     ap.add_argument("--out", default=os.path.join(ROOT, "build", "oracle"))
     ap.add_argument("--quit", type=float, default=None, help="quit at this time (default: after the last event)")
+    ap.add_argument("--record", action="store_true", help="record the run, keep its sound as DIR/record.wav")
     a = ap.parse_args()
     cue = glob.glob(os.path.join(ROOT, "iso", "*.cue"))
     if not cue:
@@ -103,7 +108,13 @@ def main():
             sock.sendto(msg, ("127.0.0.1", REMOTE_PORT))
 
     log = os.path.join(out, "retroarch.log")
-    p = subprocess.Popen([RETROARCH, "-L", CORE, cue[0], "--appendconfig=" + append, "-v", "--log-file=" + log])
+    cmd = [RETROARCH, "-L", CORE, cue[0], "--appendconfig=" + append, "-v", "--log-file=" + log]
+    mkv = os.path.join(out, "record.mkv")
+    if a.record:
+        if os.path.exists(mkv):
+            os.remove(mkv)
+        cmd += ["--record", mkv]
+    p = subprocess.Popen(cmd)
     t0 = time.monotonic()
     releases = []
     shot_times = []
@@ -138,6 +149,10 @@ def main():
         dst = os.path.join(out, "t%g.png" % t)
         shutil.move(os.path.join(shots, n), dst)
         print("%6.1f s: %s" % (t, dst))
+    if a.record and os.path.exists(mkv):
+        wav = os.path.join(out, "record.wav")
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", mkv, "-vn", "-acodec", "pcm_s16le", wav], check=True)
+        print("sound: %s" % wav)
     if len(files) != len(shot_times):
         print("%d screenshots asked for, %d came" % (len(shot_times), len(files)))
 

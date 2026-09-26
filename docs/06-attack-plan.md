@@ -131,7 +131,7 @@ language for deeper reading.
 | 4 ✓ | **runtime core**: memory map, BIOS HLE boot, SCU interrupts and DMA, SMPC, the slave, CD block at its registers, the sound driver's handshake; from the boot through OPEN, HYDSYS and STARTUP to M_CHI's frame loop at 12 fps (`11-runtime.md`) | runtime: `machine`, `bios`, `mmio`, `scu`, `smpc`, `cdrom`, `cdblock`, `onchip`, `video` |
 | 5 ✓ | **VDP2 + VDP1 on screen**: the opening movie, the title, the menus and the first field, in software, in a window, with the pad; against Beetle Saturn (`12-video.md`). The SEGA licence screen is the BIOS's, not the game's | runtime: `vdp1` (software), `vdp2`, `host`; `tools/oracle.py` here |
 | 6 | **in the field**: play it (drawn since phase 5: distorted sprites, Gouraud, shadow); the same world against the oracle; VDP1 on the GPU at N× resolution; what the other areas ask of VDP1 and VDP2; the framebuffer's CPU view | `vdp1` on the GPU, `vdp2` as needed |
-| 7 | **sound**: CD-DA through the SCSP mixer, the 68000 and the SCSP for effects | `m68k`, `scsp`, `audio` |
+| 7 ✓ | **sound**: the 68000 and the SCSP run the game's drivers; CD-DA through the SCSP's external input, not yet heard in the game (`13-sound.md`) | runtime: `sound` (Musashi), `scsp`, the audio stream |
 | 8 | **the frame rate**: 60 Hz VBlank, the cap held, then the cap lowered to 2 and 1 and the game checked at 30 and 60 fps | profiler, frame pacing |
 | 9 | **PC finish**: resolution, window/fullscreen, pad and keyboard mapping, saves to a host file, configuration; release shape | |
 
