@@ -1,30 +1,26 @@
-# Next session: the frame rate, and the rest of phase 6
+# Next session: the fields in between, then the rest of phase 6
 
 Where things stand: the game is on screen, plays, and is heard
 (`12-video.md`, `13-sound.md`). The frame cap can be lowered
-(`tools/run.py --frame-interval 1` or `2`), but the player's motion is
-stepped per frame, so at 60 fps the player walks 5 times too fast
-(`14-frame-rate.md`).
+(`tools/run.py --frame-interval 1` or `2`), but everything that moves is
+stepped per frame, so the port draws the fields between the game's
+frames instead (`--interp`, `14-frame-rate.md`).
 
-## First: the user's choice for the frame rate
+## First: the fields in between, finished
 
-Two ways, not exclusive:
+The user chose interpolation (`14-frame-rate.md`): `tools/run.py --play
+--interp` runs the game at its 12 frames a second and the runtime draws
+60 pictures a second, one frame behind. To do:
 
-1. **Make the per-frame steps follow dt** (level 3 as planned, with more
-   work than one constant). Find every place that steps an object once
-   per frame: the player's motion script in the world update
-   (0x0602EFDC, entries at +0x48, count at +0x56), the animation poses,
-   the enemies, projectiles, the camera. At each, advance the script by
-   accumulated dt (an entry every 5 VBlanks) and scale the frame's move
-   by dt/5. That needs a way to replace a recompiled function by a
-   hand-edited copy (saturnkit has hooks on single instructions, not yet
-   replacements). How many places there are decides whether this is one
-   session or several; start by listing them (watch the player's and an
-   enemy's fields per frame at intervals 5 and 1, as session 6 did).
-2. **Keep the logic at 12 fps and draw the frames in between**: the
-   draw-list interpolation of `06-attack-plan.md`, or, cleaner if the 3D
-   pipeline is read, interpolating the camera and the objects' matrices
-   the game hands its renderer.
+* The user's eyes on it in play: walking, turning, fighting, enemies,
+  the sky, the HUD, menus over the field.
+* Zero latency: draw the fields toward the frame the game has already
+  built while it waits in its limiter (its 3D list is complete there;
+  its textures, the player's picture among them, come with the send).
+* The other area programs: find the game layer's addresses in M_DRA,
+  M_SYA, M_KYU... (`recomp.match` carries names across programs).
+* Commands with no counterpart pop in at their place; fading them in, or
+  holding the vanished ones, if it shows.
 
 ## Then
 

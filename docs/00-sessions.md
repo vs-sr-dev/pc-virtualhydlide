@@ -145,3 +145,16 @@
   entry a frame in the world update: at 60 fps the player walks 5 times
   too fast. Lowering the constant is not enough; the per-frame steps have
   to follow dt.
+* **60 pictures a second, the game's logic untouched** (`14-frame-rate.md`):
+  a census with the new work-RAM `--watch` showed every object's motion,
+  turning and animation, and the camera, counted in frames inside state
+  machines, so the user chose interpolation over rewriting them.
+  `tools/run.py --play --interp`: the runtime records each frame VDP1
+  draws and draws the four fields in between with every command moved
+  part of the way, one frame behind; a game layer
+  (`tools/game/hydlide.cpp`, the port's first C++) keys each 3D command
+  by the instance and model part the game was drawing, through
+  recompiler hooks. The player turned out to be a sprite rendered anew
+  each frame, whose next picture arrives before the frame changes: the
+  frames are redrawn from a copy of VDP1 RAM.
+
