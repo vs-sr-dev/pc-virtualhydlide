@@ -41,6 +41,10 @@ PROGRAMS = RESIDENT + [(n, 0x0600B000) for n in SWAPPED]
 AREAS = ["M_CHI", "M_DRA", "M_SYA", "M_KYU", "M_FIN", "M_BURIAL", "M_ORDEAL", "M_RUINS", "M_SEAL"]
 FRAME_CAP = 0x0600B6F4
 HOOKS = {n: [FRAME_CAP] for n in AREAS}
+# the game layer's (tools/game/hydlide.cpp): M_CHI's instance draw, the slave's job, the 3D drawers, the command
+# emitter and the send to VDP1, for --interp
+HOOKS["M_CHI"] += [0x06025384, 0x060255DC, 0x06026084, 0x060269B4, 0x06026FB8, 0x060275D4, 0x06027D88, 0x06024DD0, 0x06024EB8]
+GAME = os.path.join(ROOT, "tools", "game", "game.cmake")
 # the self-test's division and bit-field helpers, by name (tools/names-m_chi.tsv)
 M_CHI_FUNCS = "060224DC,0603CAE0,0603E980,0603EA34,0603E918"
 
@@ -84,7 +88,8 @@ def main():
         t = time.time()
         tool = lambda x: shutil.which(x, path=env["PATH"])      # CreateProcess searches the parent's PATH
         subprocess.run([tool("cmake"), "-S", OUT, "-B", BUILD, "-G", "Ninja", "-DCMAKE_CXX_COMPILER=clang++",
-                        "-DCMAKE_C_COMPILER=clang"],
+                        "-DCMAKE_C_COMPILER=clang",
+                        "-DSATURNKIT_EXTRA=" + GAME.replace(os.sep, "/")],
                        env=env, check=True, stdout=subprocess.DEVNULL)
         subprocess.run([tool("ninja"), "-C", BUILD], env=env, check=True)
         print("built in %.0f s" % (time.time() - t))

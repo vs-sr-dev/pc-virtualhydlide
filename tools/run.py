@@ -5,7 +5,9 @@
 
 --frame-interval N (both ways of running) sets the frame cap of the area
 programs: the game draws a frame every N VBlanks at most, 5 as it ships
-(12 fps), 2 for 30 fps, 1 for 60 (docs/14-frame-rate.md).
+(12 fps), 2 for 30 fps, 1 for 60 (docs/14-frame-rate.md). --interp keeps
+the game's 12 frames a second and draws the fields between them with
+everything moved part of the way: 60 pictures a second, one frame behind.
 
 --play opens the window (keys in saturnkit/runtime/host.cpp: arrows, Enter
 START, Z X C = A B C, A S D = X Y Z, Q W = L R; F12 saves the picture, F11
@@ -92,6 +94,7 @@ def main():
     ap.add_argument("--report", action="store_true", help="print the hardware log as Markdown, do not run")
     ap.add_argument("--input", default=None, help="pad script (default: the one that reaches the field)")
     ap.add_argument("--frame-interval", type=int, default=None, help="VBlanks a frame at least: 5 as shipped, 2, 1")
+    ap.add_argument("--interp", action="store_true", help="draw the fields between the game's frames moving")
     ap.add_argument("rest", nargs="*", help="more arguments for the saturn executable")
     a = ap.parse_args()
     if a.report:
@@ -112,6 +115,8 @@ def main():
                 "--input", a.input if a.input is not None else field_script()]
     if a.trace:
         cmd.append("--trace")
+    if a.interp:
+        cmd.append("--interp")
     if a.frame_interval is not None:
         cmd += ["--hook", "0600B6F4:r5=%x" % a.frame_interval]
     sys.exit(subprocess.run(cmd + a.rest, env=env).returncode)

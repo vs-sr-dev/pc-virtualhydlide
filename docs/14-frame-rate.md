@@ -83,3 +83,59 @@ compared with 4 in one state, decremented to 0 in another, +0x62 and
 +0x52 elsewhere), with some twenty places that touch the counters.
 Making all of it follow dt means rewriting each state's timing, for the
 player, the other objects and the camera, in every area program.
+
+## The way taken: the fields in between, drawn by the runtime
+
+With the user (session 6) the frame rate is reached the other way: the
+game keeps its 12 frames a second and its own logic, untouched, and the
+runtime draws the four fields between two of its frames.
+
+```sh
+python tools/run.py --play --interp
+```
+
+**What the runtime does** (saturnkit's `vdp1.cpp`, `--interp`). Every
+frame the game draws (the draws between two frame changes) is recorded:
+each command VDP1 executes, its 32 bytes, the clipping and local
+coordinates each draw starts from, VDP2's scroll registers and a copy of
+VDP1 RAM at the frame change. At every field until the next change the
+last frame is drawn again into a framebuffer of the runtime's own, each
+command's vertices moved from where its counterpart was in the frame
+before by the part of the interval gone by, and VDP2's NBG scroll moved
+the same way; that framebuffer is the field's sprite layer. The picture
+is one game frame behind (83 ms at 12 fps) and moves at 60 fields a
+second. A command with no counterpart is drawn where it is.
+
+**Which command is which** (the game layer, `tools/game/hydlide.cpp`).
+The field's 3D list is some 220–250 commands a frame, most of them ground
+tiles that share a handful of textures, so matching by look and nearness
+confuses them. The layer gives each command a key from the game's own
+drawing calls, through recompiler hooks: the instance being drawn (r4 of
+0x06025384, which 0x0601E5E4 calls once per instance; the master draws it
+or hands a copy to the slave, whose job starts at 0x060255DC), the model
+part (r5 of the five drawers 0x06026084, 0x060269B4, 0x06026FB8,
+0x060275D4, 0x06027D88), the drawer's call site, the command's number
+within the part and the part's occurrence in the frame. Every command
+passes through 0x06024DD0, which copies it into a slot of a double
+buffer that 0x06024EB8 sends whole to VDP1 RAM at 0, so the slot is the
+command's address: the keys go to VDP1 with the send. In a turn in the
+field, with keys: no key twice in a frame, 80 % of the commands matched
+(the rest come into view), a median move of 34 pixels a frame.
+
+**Two findings on the way.** The player is not a model: it is one
+distorted sprite (and a shadow) whose picture the game renders anew
+every frame into VDP1 RAM (0x776C0 onward, sent with the frame). And the
+next frame's textures arrive a field before its frame change, so a frame
+drawn again from live VDP1 RAM in the interval's last field showed the
+new player picture in the old one's place, as stripes: hence the copy of
+VDP1 RAM at each change.
+
+Checked: the movie, the title and the menus are the same picture with and
+without `--interp`, pixel for pixel; twelve fields of a turn in the field
+move evenly, with no stray polygons. It costs about 1.4 ms of host time
+a field.
+
+Still to do: the other area programs (the layer's addresses are
+M_CHI's); zero latency, by drawing the fields toward the frame the game
+has already built when it waits in its limiter (its list is complete
+there; its textures come later, with the send).
