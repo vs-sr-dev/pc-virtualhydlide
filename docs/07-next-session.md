@@ -3,7 +3,10 @@
 Where things stand: the game is on screen and plays (`12-video.md`).
 VDP1 and VDP2 are drawn in software, the window takes the keyboard and a
 gamepad, and the opening movie, the title, the menus and the first field
-look like Beetle Saturn's. Sound is still silent (phase 7).
+look like Beetle Saturn's. The user played it at the end of session 5
+(a new world, over two minutes in the field, running and fighting):
+everything looked right. Sound is silent, and it is now the most visible
+gap: phase 7 (the 68000 and the SCSP, CD-DA) may come first.
 
 ## TODO
 

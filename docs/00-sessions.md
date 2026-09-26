@@ -116,3 +116,7 @@
 * `tools/oracle.py`: Beetle Saturn driven over UDP (buttons, screenshots)
   with its own settings; `tools/run.py --play`; the runtime's `--shot`,
   `--dump`, and `--watch` tracing the caller.
+* **Played** by the user at the end of the session, with a gamepad: the
+  menus, a new world, then the field for over two minutes, running
+  around and killing monsters. Everything looked right; the sound is
+  silent (phase 7).
