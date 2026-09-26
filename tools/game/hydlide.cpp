@@ -12,10 +12,10 @@
 // part, and how many times that part of that instance was drawn before in
 // the frame:
 //
-//   * the instance: 0x0601E5E4 draws the frame's instances one by one
-//     through 0x06025384 (r4 the instance's structure, a fixed address for
-//     each), which draws it on the master or copies it to 0x060555B0 and
-//     hands it to the slave, whose job starts at 0x060255DC;
+//   * the instance: 0x0601E5E4 draws a few instances (the player, the
+//     sprites around it) through 0x06025384, r4 the instance's structure at
+//     a fixed address; the map is drawn by the slave, a job (0x060255DC) for
+//     each block of the map in view, known by the block's position;
 //   * the part: the five drawers (0x06026084, 0x060269B4, 0x06026FB8,
 //     0x060275D4, 0x06027D88) are called with r5 the part, in the model's
 //     data;
@@ -26,9 +26,6 @@
 //   * 0x06024EB8 sends the buffer to VDP1 RAM at 0 (a DMA of the whole
 //     buffer, so slot n is the command at 32 * n) and starts the draw: at
 //     its entry the keys go to vdp1_next_draw_keys.
-//
-// The slave runs its job when the master hands it over (saturnkit's slave is
-// a coroutine), so the instance the master noted is the slave's.
 //
 // These are M_CHI's addresses (the first field); the other area programs
 // share the engine at other addresses, to be matched when they are played.
@@ -59,8 +56,14 @@ void on_instance(SH2Context& c, uint32_t) {
     if (g_cfg.interp) g_instance[c.cpu & 1] = canon(c.r[4]);
 }
 
+// The slave's jobs are the map's blocks: r4 is the copy at 0x060555B0, the
+// block's world position at +0, +4, +8 (a grid of 0x200000), its turn at
+// +12, its model at +28. Blocks of one kind share their model and parts,
+// so the block is known by where it is.
 void on_slave_job(SH2Context& c, uint32_t) {
-    if (g_cfg.interp && c.cpu == 1) g_instance[1] = g_instance[0];
+    if (!g_cfg.interp || c.cpu != 1) return;
+    uint32_t a = canon(c.r[4]);
+    g_instance[1] = (uint32_t)mix(mix(mix(mix(ld32(a), ld32(a + 4)), ld32(a + 8)), ld32(a + 12)), ld32(a + 28));
 }
 
 void on_drawer(SH2Context& c, uint32_t addr) {

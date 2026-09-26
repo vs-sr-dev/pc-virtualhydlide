@@ -135,6 +135,32 @@ without `--interp`, pixel for pixel; twelve fields of a turn in the field
 move evenly, with no stray polygons. It costs about 1.4 ms of host time
 a field.
 
+**After the user's first play** (two glitches reported: the ground
+sometimes split by pure white lines and wedges, and trees garbled by
+direction and distance, righting themselves up close):
+
+* *Trees.* Only a handful of instances pass through 0x06025384; the map
+  is drawn by the slave, one job per block of the map in view (the copy
+  at 0x060555B0: the block's world position at +0/+4/+8 on a grid of
+  0x200000, its quarter turn at +12, its model at +28). Blocks of one kind
+  share their model, trees included, so the key's "occurrence of the
+  part" swapped one tree for another whenever a block left the view. A
+  block is now known by its position.
+* *White.* The lower half of the screen is cleared to a near-white grey
+  (0xF39C) before the ground is drawn, and it shows wherever two ground
+  shapes stop meeting. A shape with no counterpart (just come into view)
+  used to stay where it was while its neighbours moved; now it moves with
+  what it touches: a matched vertex it shares, a matched edge it lies on
+  (near the camera the finer ground meets the coarser in T-junctions),
+  else the nearest matched vertex; in two passes, so that new ground
+  meets new ground too. Matched shapes that share a vertex move it by the
+  mean of their moves.
+
+Measured on 500 fields of turning and walking: fields with more than 20
+near-white pixels on the ground, 5 with `--interp` as without it (pale
+stones), down from 40; one small wedge at a screen corner remains in two
+or three fields. Trees stay whole through a turn.
+
 Still to do: the other area programs (the layer's addresses are
 M_CHI's); zero latency, by drawing the fields toward the frame the game
 has already built when it waits in its limiter (its list is complete
