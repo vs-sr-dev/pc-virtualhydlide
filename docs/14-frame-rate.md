@@ -73,8 +73,8 @@ around it.
 | +0x5C | a speed or distance | up to 100 times | 0x0602D116 |
 
 Outside the array, two structures move 5 to 11 times too fast as well
-(0x06059A30 region, written by 0x06031144 and 0x060319FE; 0x060597D8
-region, copied every frame), by their size and cadence the camera.
+(0x06059A10 and 0x06059A1C, written by 0x06031144 and 0x060319FE;
+0x06059C80-0x06059C88, copied every frame), perhaps the camera.
 
 Nothing in the array follows dt. And the per-frame steps are not a few
 lines: 0x0602D3FE is a state machine of about a thousand instructions
