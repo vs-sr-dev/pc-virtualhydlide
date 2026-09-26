@@ -1,12 +1,13 @@
 # The runtime core
 
 Phase 4: the recompiled programs on a Saturn made of C++, with no screen
-and no sound yet. The runtime is saturnkit's (`saturnkit/runtime`); this
-repository gives it the disc and a pad script (`tools/run.py`).
+and no sound yet (the screen came in phase 5: `12-video.md`). The runtime
+is saturnkit's (`saturnkit/runtime`); this repository gives it the disc
+and a pad script (`tools/run.py`).
 
 ```sh
 python tools/recomp.py --build      # also builds build/recomp-build/saturn.exe
-python tools/run.py                 # boot to the field, 2 minutes of game time (about 3 s)
+python tools/run.py                 # boot to the field, 2 minutes of game time (8 s since phase 5 draws)
 python tools/run.py --trace         # the same, with every event on stderr
 python tools/run.py --report        # the hardware log of the last run, as the tables below
 ```
@@ -18,8 +19,13 @@ script reaches the same place at the same VBlank every time.
 
 Boot to the field, with the pad script of `tools/run.py`: START at VBlank
 1200, then START, A and C in turn every two seconds until VBlank 3100,
-then nothing. Nothing is on screen yet, so which press does what is not
-known; what is known is where it leads.
+then nothing. Nothing was on screen in session 4, so which press did
+what was not known; where it led was. Session 5's pictures, one 60
+VBlanks after each press: START at 1200 skips the movie to the title;
+START at 1800 leaves the title, and STARTUP loads (*Now LOADING*); its
+menu is up at 2340 on *Create new world*; C at 2400 opens *Create world
+randomly*, START at 2520 does nothing, A at 2640 asks *Are you sure?
+Start game*, C at 2760 starts creating the world (HCTSPBMFCH).
 
 | Game time | What happens |
 |---|---|
@@ -43,7 +49,9 @@ At the end (VBlank 7 200, game time 120 s): 3 program starts, 1 871 VDP1
 frame changes, 3 022 VDP1 draws, the slave woken 7 631 times through
 SINIT; no return that went elsewhere, no call to an address that is not
 an entry. On the host it takes 3.2 s: about 38 times faster than the
-game's own time, without trying to be fast.
+game's own time, without trying to be fast. (Session 5: 1 543 frame
+changes and 2 694 draws, the movie at its right speed; 8 s on the host,
+VDP1 drawing.)
 
 Interrupts taken by the master in the run:
 
@@ -71,8 +79,9 @@ Interrupts taken by the master in the run:
 | `smpc.cpp` | Commands, INTBACK, a digital pad driven by a script |
 | `cdrom.cpp`, `cdblock.cpp` | The disc (.cue/.bin, ISO 9660) and the CD block at its registers |
 | `onchip.cpp` | The SH7604's own registers, per CPU: division unit, free-running timer, DMAC |
-| `video.cpp` | VDP1, VDP2 and sound RAM as memory, the raster timing, the sound driver's side |
-| `main.cpp` | `saturn --cue GAME.cue [--vblanks N] [--input SCRIPT] [--trace] ...` |
+| `video.cpp` | The raster timing, the video and sound chips on the bus, the sound driver's side |
+| `vdp1.cpp`, `vdp2.cpp`, `host.cpp` | VDP1 drawn in software, VDP2's picture, the window and the pad (phase 5, `12-video.md`) |
+| `main.cpp` | `saturn --cue GAME.cue [--headless] [--vblanks N] [--input SCRIPT] [--shot N,...] [--trace] ...` |
 
 ### Time
 
@@ -82,7 +91,9 @@ time moves on, the devices run, interrupts are taken. Time is virtual by
 default, 400 ns a safe point (about 11 instructions at 28.6 MHz), and a
 register access costs a safe point, so a loop that waits on a device lets
 time pass (in this run it makes no difference: everything the game waits
-for comes with time). `--realtime` takes the host's clock instead.
+for comes with time). `--realtime` takes the host's clock instead. With
+a window (phase 5) time stays virtual and each VBlank-IN waits for the
+host's clock.
 
 The raster is NTSC, 263 lines at 59.94 Hz: line 0 raises VBlank-OUT, line
 224 (240 with TVMD's VRESO) VBlank-IN, every line HBlank-IN and the SCU
@@ -178,8 +189,10 @@ driver taking commands: the host writes 16-byte blocks into sound RAM at
 block's first byte is cleared. The runtime clears it at the next poll and
 logs the command. One kind is followed further: PCM streaming (0x85
 start, 0x86 stop), because the movie player paces itself by the play
-position the driver publishes at 0x7A0 + 2 × stream; the runtime runs it
-from the start command's pitch (0x7800: 22 050 Hz) and ring size.
+position the driver publishes in the byte at 0x7A0 + 2 × stream, in
+blocks of 4096 samples (session 5, `12-video.md`: published a sample at a
+time, it made the movie 2.4 times too fast); the runtime runs it from the
+start command's pitch (0x7800: 22 050 Hz) and ring size.
 
 902 commands in the run: 0x09 ×768, 0x02 ×56, 0x82 ×25, 0x0E ×20, 0x0C,
 0x0D and 0x01 ×6, 0x05 ×4, 0x08, 0x83 and 0x87 ×3, 0x85 and 0x86 once.
@@ -287,11 +300,13 @@ the same run (`tools/run.py --vblanks N -- --peek 25F80000:8,...`).
 ## Limits
 
 * **No 68000.** Sound-driver commands are taken and logged, PCM play
-  positions run from time; sequences and effects make no sound. The
-  driver's other outputs (0x25A000A0–0xAE are read too) stay as written.
+  positions run from time; sequences and effects make no sound. (The
+  reads of 0x25A000A0–0xAE are the PCM task's, at 0.415 s, before the
+  driver has put its area's address at 0x404.)
 * **CD-DA** plays would be timed, not heard.
-* **VDP1** "draws" in 1 ms and draws nothing; the command list is walked
-  for the counts. VDP2 is not composited.
+* **VDP1** draws in 1 ms of game time, whatever it draws. (Session 4: it
+  drew nothing and VDP2 was not composited; both are phase 5's,
+  `12-video.md`.)
 * **Interrupts** come at polls only (up to 256 safe points late), and an
   interrupt raised twice before it is taken is one: timer 1, every line on
   the Saturn, comes about once a poll.

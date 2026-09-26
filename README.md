@@ -23,7 +23,7 @@ on the European release, MK-81380 (V1.000, 1995-06-30), as a Redump-style
 ## Layout
 
     docs/            disc, format and code analysis, and the plan
-    tools/           Virtual Hydlide-specific data and tools: names-m_chi.tsv, recomp.py, run.py
+    tools/           Virtual Hydlide-specific data and tools: names-m_chi.tsv, recomp.py, run.py, oracle.py
     saturnkit/       game-agnostic Saturn toolkit (submodule)
     iso/, build/     your disc and everything derived from it (ignored by git)
 
@@ -59,9 +59,16 @@ python -m saturnkit.sh2emu $EXE --base 0600B000 --call 060224DC --regs r1=100,r0
 # all 15 programs to C++, built with clang (MSYS2) and checked against the interpreter
 python tools/recomp.py --build --test
 
-# the game on saturnkit's runtime, headless: boot to the first field, then the hardware log
+# play it: a window, the keyboard (arrows, Enter, Z X C, A S D, Q W) or a gamepad
+python tools/run.py --play
+
+# headless: boot to the first field, then the hardware log; pictures at chosen VBlanks
 python tools/run.py
 python tools/run.py --report
+python tools/run.py -- --shot 600,1300,7200
+
+# the oracle: Beetle Saturn in RetroArch, pressed and photographed from here
+python tools/oracle.py --at 30:START,35.3:shot
 ```
 
 ## Status
@@ -81,7 +88,11 @@ Session 4: the runtime core. The recompiled game runs on saturnkit's
 Saturn, still with no screen: it boots, plays its opening movie, loads
 HYDSYS, goes through the title menu and reaches the first field, whose
 frame loop holds its cap of 12 frames a second (`docs/11-runtime.md`).
-Next: VDP1 and VDP2 on screen (`docs/07-next-session.md`).
+
+Session 5: on screen. VDP1 and VDP2 in software and a window: the
+opening movie, the title, the menus and the field are drawn and look like
+Beetle Saturn's, and the game is played with the keyboard or a gamepad
+(`docs/12-video.md`). Next: playing in the field (`docs/07-next-session.md`).
 
 ## Documentation
 
@@ -95,6 +106,7 @@ Next: VDP1 and VDP2 on screen (`docs/07-next-session.md`).
 * [07-next-session.md](docs/07-next-session.md) — the next session's list
 * [09-recompiler.md](docs/09-recompiler.md) — the programs as C++: the generated code, the counts, the self-test
 * [11-runtime.md](docs/11-runtime.md) — the runtime core: the run to the field, how the Saturn is built, the hardware touched
+* [12-video.md](docs/12-video.md) — VDP1 and VDP2 on screen: what each screen uses, the window, the oracle
 * [10-saturnkit.md](docs/10-saturnkit.md) — what this port gave saturnkit
 
 ## Licence

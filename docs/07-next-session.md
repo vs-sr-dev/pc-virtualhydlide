@@ -1,65 +1,53 @@
-# Next session: VDP1 and VDP2 on screen (phase 5)
+# Next session: playing in the field (phase 6)
 
-Where things stand: the game runs headless from the boot to the first
-field's frame loop (`11-runtime.md`). The VDPs are memory: every command
-table and every register the game writes is there, nothing is drawn.
-Phase 5 draws it.
+Where things stand: the game is on screen and plays (`12-video.md`).
+VDP1 and VDP2 are drawn in software, the window takes the keyboard and a
+gamepad, and the opening movie, the title, the menus and the first field
+look like Beetle Saturn's. Sound is still silent (phase 7).
 
 ## TODO
 
-1. **A window** in saturnkit's runtime: SDL3 and OpenGL 4.5 (wiikit's
-   window, input and frame pacing as the starting point). The frame is
-   shown at VBlank-IN; with a window the clock is the host's (`realtime`),
-   and `--headless` keeps today's deterministic runs for tests.
-2. **VDP1**, at each draw (`draw_start` already walks the list): normal,
-   scaled and distorted sprites, polygons, polylines and lines; system and
-   user clipping, local coordinates; the colour modes (4 bpp bank and
-   lookup table, 8 bpp, RGB), end codes, transparent pixels. First exact
-   and in software, into the emulated framebuffer the game changes by hand
-   (FBCR FCM|FCT); the GPU path at N× resolution once the software one is
-   the reference. Colour calculation (half-transparency, shadow, Gouraud,
-   mesh) as the screens need it.
-3. **VDP2, a first compositor**: the sprite layer from VDP1's framebuffer
-   (type 1, palette and RGB mixed, SPCTL 0x3031; priorities from
-   PRISA–PRISD), the NBG layers the screens use (STARTUP's NBG2, the
-   field's NBG1 scrolled by SCXIN1/SCYIN1) in their cell modes, CRAM, the
-   back screen and the colour offset (COAR/COAG/COAB: the fades). 320×224
-   for OPEN, **320×256** for STARTUP and M_CHI (TVMD VRESO 2).
-4. **The pad** from SDL3 (keyboard and gamepad) into the SMPC's INTBACK
-   answer; the script (`--input`) stays for tests.
-5. **The oracle**: Beetle Saturn through RetroArch (`F:\RetroArch 2`, as
-   `D:\Homebrew6\SAT-LBA\run.ps1` does) for screenshots of the same
-   moments: the SEGA and T&E logos, the opening movie, the title menu, the
-   first field.
-6. **Done when**: the logos, the movie, the title menu and the first
-   field are on screen in real time and look like the oracle's
-   screenshots; the headless run still reaches the field.
+1. **Play it** with the user, in the field and beyond: walk, fight, open
+   the map and the status screen (open question 13), reach another area
+   (M_DRA, M_SYA…). Whatever looks wrong is a finding; a VDP2 feature the
+   compositor does not do is noted once in the log ("VDP2: … is not
+   done").
+2. **The same world in both**: *Create world with code* HCTSPBMFCH in
+   Beetle (`tools/oracle.py` presses the buttons) and in the port, and
+   compare the same view: the horizon's haze, the Gouraud shading, the
+   shadow sprite, the HUD.
+3. **VDP1 on the GPU** at N× resolution, the software path kept as the
+   reference (a run can draw both and compare). Mesh as real
+   transparency, as an option.
+4. **What the other areas ask for**: VDP2 features that turn up (windows,
+   line scroll, rotation?), VDP1's framebuffer from the CPU (open
+   question 4), double-density interlace (question 3).
+5. **Done when**: a stretch of play in the field and one other area looks
+   like the oracle, with nothing noted as not done that shows.
 
 ## When convenient
 
 * Read the slave job (0x0602583C) and its master twin (0x060255DC), and
-  the VDP1 command builder: phase 5 draws what they build.
-* 256 lines on a 60 Hz raster: the runtime puts VBlank-IN at line 224 for
-  VRESO 2. Decide what the port shows (256 lines at 60 Hz is the plan)
-  and whether anything in the game depends on the PAL line count.
-* Where the 27 CD-DA tracks play (open questions 6, 14): HYDSYS's group
-  0x03, run the other areas; the runtime notes every CD-DA play.
-* Open questions 16 (the sound driver's other outputs) and 17 (timer 1
-  on every line).
+  the VDP1 command builder.
+* 256 lines on a 60 Hz raster: the port shows 256 lines and puts
+  VBlank-IN at line 224 for VRESO 2; check whether anything in the game
+  depends on the PAL line count.
+* The movie's cadence: a new frame every 4 VBlanks at 60 Hz, sometimes 3
+  or 5; compare with Beetle's at 50 Hz.
+* Where the 27 CD-DA tracks play (open questions 6, 14); open questions
+  16 (the rest of the sound driver's area) and 17 (timer 1 on every line).
 
 ## Useful
 
+* Play: `python tools/run.py --play`. Headless to the field:
+  `python tools/run.py` (8 s); pictures: `-- --shot N,...`
+  (build/run/shot-N.png), video memory: `-- --dump N,...`.
+* The oracle: `python tools/oracle.py --at 30:START,35.3:shot,...`
+  (build/oracle/tSECONDS.png); Beetle runs at 50 frames a second, the
+  times are wall-clock.
+* `--watch LO:HI` with `--trace` prints each access to the range with
+  the caller's `pr`: the quickest way to find who reads a variable.
 * Regenerate, build and check everything: `python tools/recomp.py --build
-  --test` (about 2.5 minutes); it also builds the runtime
-  (`build/recomp-build/saturn.exe`).
-* The run to the field: `python tools/run.py` (3 s), `--trace` for every
-  event, `--report` for the hardware log; after `--` the executable's own
-  options: `--peek ADDR[:WORDS],...` (memory at the end), `--watch LO:HI`
-  (each address of a memory area, counted), `--input VBLANK:BUTTONS,...`,
-  `--vblanks N`, `--realtime`.
-* When a run stops or ends, the runtime prints the interrupts taken, the
-  return addresses on the stack, and **where the master's last 4096 polls
-  were** (the recompiled function that was spinning): the quickest way to
-  see what the game is waiting for.
-* The generated code: `build/recomp/p_<program>_NNN.cpp`, each line with
-  its address and instruction.
+  --test` (about 2.5 minutes).
+* When a run stops or ends, the runtime prints where the master's last
+  4096 polls were: what the game is waiting for.

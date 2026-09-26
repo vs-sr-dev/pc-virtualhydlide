@@ -1,8 +1,12 @@
-"""Run Virtual Hydlide on saturnkit's runtime, headless, and report what it did.
+"""Run Virtual Hydlide on saturnkit's runtime: to play it, or headless, and report what it did.
 
+    python tools/run.py --play [-- saturn args...]     # a window, the keyboard and a gamepad
     python tools/run.py [--vblanks N] [--trace] [--report] [--input SCRIPT] [-- saturn args...]
 
-Boots the disc (iso/*.cue) into the recompiled programs (build/recomp-build,
+--play opens the window (keys in saturnkit/runtime/host.cpp: arrows, Enter
+START, Z X C = A B C, A S D = X Y Z, Q W = L R; F12 saves the picture, F11
+fullscreen) with no pad script and no end. Without it the run is headless:
+it boots the disc (iso/*.cue) into the recompiled programs (build/recomp-build,
 from `python tools/recomp.py --build`), with the pad script that reaches the
 field: START on the title, then START, A and C in turn through the menus
 (Create new world, randomly, Start game) until M_CHI starts, then nothing.
@@ -78,6 +82,7 @@ def report(path):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--play", action="store_true", help="a window, no pad script, no end")
     ap.add_argument("--vblanks", type=int, default=7200)
     ap.add_argument("--trace", action="store_true")
     ap.add_argument("--report", action="store_true", help="print the hardware log as Markdown, do not run")
@@ -93,8 +98,13 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     env = dict(os.environ, PATH=MSYS + os.pathsep + os.environ["PATH"])
     exe = shutil.which("saturn", path=BUILD) or os.path.join(BUILD, "saturn.exe")
-    cmd = [exe, "--cue", cue[0], "--out", OUT, "--vblanks", str(a.vblanks),
-           "--input", a.input if a.input is not None else field_script()]
+    cmd = [exe, "--cue", cue[0], "--out", OUT]
+    if a.play:
+        if a.input is not None:
+            cmd += ["--input", a.input]
+    else:
+        cmd += ["--headless", "--vblanks", str(a.vblanks),
+                "--input", a.input if a.input is not None else field_script()]
     if a.trace:
         cmd.append("--trace")
     sys.exit(subprocess.run(cmd + a.rest, env=env).returncode)

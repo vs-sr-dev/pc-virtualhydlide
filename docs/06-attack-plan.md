@@ -100,8 +100,9 @@ VDP2 backgrounds: the hardest).
 ## Oracle
 
 Beetle Saturn (Mednafen) through RetroArch is installed
-(`F:\RetroArch 2`, used by the SAT-LBA project): screenshots by frame
-count for comparison, the user's eyes for play. A debugger (Mednafen
+(`F:\RetroArch 2`, used by the SAT-LBA project): `tools/oracle.py`
+presses its buttons and takes its screenshots over UDP (`12-video.md`);
+the user's eyes for play. A debugger (Mednafen
 standalone, or Ghidra reading plus our own runtime's traces) helps with
 run-time values. Ghidra 12.1.2 has an SH-2
 language for deeper reading.
@@ -114,8 +115,8 @@ language for deeper reading.
 | 2 | **code map**: function discovery on stripped SHC code, switch tables; the frame loop, its cap and how the logic steps (done); HYDSYS's services and the program swap (done); the slave job, the VDP1 command builder | `recomp.discover` (done), `exe`, a Python SH-2 interpreter as oracle, `fingerprint` (SBL by signature) |
 | 3 ✓ | **recompiler**: all 15 programs to C++, compiling and linking; self-test of isolated functions (division helper, fixed-point math, sort) against the interpreter (`09-recompiler.md`) | `recomp` (layer 4), the runtime's `core`, `stub`, `selftest` |
 | 4 ✓ | **runtime core**: memory map, BIOS HLE boot, SCU interrupts and DMA, SMPC, the slave, CD block at its registers, the sound driver's handshake; from the boot through OPEN, HYDSYS and STARTUP to M_CHI's frame loop at 12 fps (`11-runtime.md`) | runtime: `machine`, `bios`, `mmio`, `scu`, `smpc`, `cdrom`, `cdblock`, `onchip`, `video` |
-| 5 | **VDP2 + VDP1 on screen**: the SEGA logo, the opening movie (Cinepak through the emulated CD), the title and the menus | `vdp2`, `vdp1` (GPU), `video` |
-| 6 | **in the field**: distorted sprites, Gouraud, half-transparency, mesh, the digitised sprites; the framebuffer's CPU view; play with the pad | `vdp1` complete, `pad` |
+| 5 ✓ | **VDP2 + VDP1 on screen**: the opening movie, the title, the menus and the first field, in software, in a window, with the pad; against Beetle Saturn (`12-video.md`). The SEGA licence screen is the BIOS's, not the game's | runtime: `vdp1` (software), `vdp2`, `host`; `tools/oracle.py` here |
+| 6 | **in the field**: play it (drawn since phase 5: distorted sprites, Gouraud, shadow); the same world against the oracle; VDP1 on the GPU at N× resolution; what the other areas ask of VDP1 and VDP2; the framebuffer's CPU view | `vdp1` on the GPU, `vdp2` as needed |
 | 7 | **sound**: CD-DA through the SCSP mixer, the 68000 and the SCSP for effects | `m68k`, `scsp`, `audio` |
 | 8 | **the frame rate**: 60 Hz VBlank, the cap held, then the cap lowered to 2 and 1 and the game checked at 30 and 60 fps | profiler, frame pacing |
 | 9 | **PC finish**: resolution, window/fullscreen, pad and keyboard mapping, saves to a host file, configuration; release shape | |

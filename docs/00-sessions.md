@@ -91,3 +91,28 @@
   5 wrong or redundant entries gone, the self-test at 51 532 of 51 532.
 * `tools/run.py`: the run to the field, its trace, the hardware log as
   tables.
+
+## Session 5 (2026-09-26) — on screen
+
+* **The game in a window** (`12-video.md`): the opening movie, the title,
+  the menus and the first field drawn by saturnkit's VDP1 and VDP2 in
+  software, shown with SDL3 and OpenGL 4.5 at the Saturn's speed, played
+  with the keyboard or a gamepad. Against Beetle Saturn the title, the
+  movie's frames and the menus are the same pictures; the field has the
+  same look, in a different random world.
+* **VDP1**: the command table drawn the chip's way (quadrilaterals as
+  lines between two walked edges, anti-aliased lines), every colour mode,
+  clipping, mesh, shadow, half-luminance, half-transparency, Gouraud;
+  double framebuffers changing frame at VBlank-OUT. **VDP2**: NBG0–NBG3
+  in cell and bitmap modes with zoom, the sprite layer, priorities,
+  colour calculation, colour offsets, the back screen.
+* **Findings**: the frame changes at the end of VBlank (the movie player
+  asks for it in its VBlank-IN handler); the sound driver publishes the
+  PCM play position in blocks of 4096 samples, and with it the movie runs
+  at its own 15 fps instead of 2.4 times too fast; the field's sky is a
+  224-line picture stretched to 256 lines by NBG1's zoom; the SEGA screen
+  before the movie is the BIOS's; with a backup-RAM cartridge in, OPEN
+  asks where to save.
+* `tools/oracle.py`: Beetle Saturn driven over UDP (buttons, screenshots)
+  with its own settings; `tools/run.py --play`; the runtime's `--shot`,
+  `--dump`, and `--watch` tracing the caller.
