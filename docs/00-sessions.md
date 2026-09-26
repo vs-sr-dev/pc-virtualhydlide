@@ -157,4 +157,9 @@
   recompiler hooks. The player turned out to be a sprite rendered anew
   each frame, whose next picture arrives before the frame changes: the
   frames are redrawn from a copy of VDP1 RAM.
-
+* **The user played it twice.** First: "spectacular", the latency a
+  little perceptible but not in the way; white cracks in the ground and
+  garbled trees. Fixed (map blocks keyed by position, new shapes moving
+  with what they touch); second play: "much, much better", white only
+  when running, a couple of trees and the tree enemy still garbled
+  (`07-next-session.md`).

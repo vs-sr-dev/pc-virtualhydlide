@@ -12,8 +12,18 @@ The user chose interpolation (`14-frame-rate.md`): `tools/run.py --play
 --interp` runs the game at its 12 frames a second and the runtime draws
 60 pictures a second, one frame behind. To do:
 
-* The user's eyes on it in play: walking, turning, fighting, enemies,
-  the sky, the HUD, menus over the field.
+* The user's second play (after the fixes of `14-frame-rate.md`): "much,
+  much better". Left over:
+  * a little white ground still shows when *running* (moves several
+    times larger per frame than walking): check the matching thresholds
+    and the unmatched shapes' moves at running speed (record a run with
+    the run button held and count near-white pixels, `build/white.py`'s
+    way);
+  * a couple of trees still garbled, and the *tree enemy* garbled while
+    the slime is perfect: an animated model, so find how enemies reach
+    the drawers (which instance the key gets, whether its parts change
+    from frame to frame) with the key dump of the game layer;
+  * the white wedge at a screen corner in two or three fields in 500.
 * Zero latency: draw the fields toward the frame the game has already
   built while it waits in its limiter (its 3D list is complete there;
   its textures, the player's picture among them, come with the send).
