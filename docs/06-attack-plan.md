@@ -90,6 +90,20 @@ the port's game layer. To verify in play: movement and animation that
 round `dt` badly when it is small. If something does, it is fixed where
 it is, in recompiled code we own. No interpolation should be needed.
 
+**Experimental, an option at most: interpolating the draw lists.** For a
+player who wants the original 12 fps logic untouched, the renderer alone
+could make the in-between frames: match each VDP1 command with its
+counterpart in the next frame's list (same texture, same colour table)
+and draw the vertices part of the way, NBG1's scroll likewise, at 60 fps.
+The game's code stays as it is. The costs: a frame of added latency (83
+ms) to interpolate, or overshoot to extrapolate instead; a heuristic
+match, since the ground reuses the same textures and the depth sort
+reorders the list every frame; objects that appear or vanish drawn as
+they are. Worth trying only after VDP1 is on the GPU, whose pipeline it
+would share, and after level 3. Interpolating the finished picture
+(optical flow) is not worth it: at 12 fps objects move too far between
+frames for it to work without smears.
+
 Beyond the frame rate, the same ownership of the code allows: rendering
 at the PC's resolution (VDP1 coordinates are integers, so true sub-pixel
 precision means taking vertices from the projection, before rounding),
